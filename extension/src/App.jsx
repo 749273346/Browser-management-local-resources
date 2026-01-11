@@ -8,6 +8,7 @@ import FileList from './components/FileList'
 import SettingsModal from './components/SettingsModal'
 import ContextMenu from './components/ContextMenu'
 import Toast from './components/Toast'
+import ConfirmDialog from './components/ConfirmDialog'
 import { applyTheme, applyColorMode } from './theme'
 
 function App() {
@@ -41,6 +42,13 @@ function App() {
   
   // Context Menu State
   const [contextMenu, setContextMenu] = useState({ x: null, y: null, file: null });
+  const [renamingName, setRenamingName] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: null 
+  });
 
   // Try to get path from URL params first (for multi-tab nav), then localStorage
   const getInitialPath = () => {
@@ -114,6 +122,36 @@ function App() {
       }
   };
 
+  // Helper to generate unique name
+  const getUniqueName = (baseName, ext = '') => {
+      let name = `${baseName}${ext}`;
+      let counter = 2;
+      const exists = (n) => files.some(f => f.name === n);
+      while (exists(name)) {
+          name = `${baseName} (${counter})${ext}`;
+          counter++;
+      }
+      return name;
+  };
+
+  const handleRenameSubmit = async (file, newName) => {
+      setRenamingName(null);
+      if (!newName || newName === file.name) return;
+      
+      try {
+          // Construct new path
+          // Handle path separators carefully
+          const parentPath = file.path.substring(0, file.path.lastIndexOf(file.name));
+          const newPath = parentPath + newName;
+          
+          await renameItem(file.path, newPath);
+          fetchFiles(currentPath);
+          showToast('重命名成功');
+      } catch (err) {
+          showToast('重命名失败: ' + err.message, 'error');
+      }
+  };
+
   // Context Menu Handlers
   const handleContextMenu = (e, file = null) => {
       e.preventDefault();
@@ -129,34 +167,35 @@ function App() {
           if (action === 'open') {
               handleNavigate(file);
           } else if (action === 'rename') {
-              const newName = prompt('请输入新名称 (New Name):', file.name);
-              if (newName && newName !== file.name) {
-                  const newPath = file.path.replace(file.name, newName);
-                  await renameItem(file.path, newPath);
-                  fetchFiles(currentPath);
-                  showToast('重命名成功');
-              }
+              setRenamingName(file.name);
           } else if (action === 'delete') {
-              if (confirm(`确定要删除 "${file.name}" 吗? 此操作无法撤销。`)) {
-                  await deleteItem(file.path);
-                  fetchFiles(currentPath);
-                  showToast('删除成功');
-              }
+              setConfirmDialog({
+                  isOpen: true,
+                  title: '删除文件',
+                  message: `确定要删除 "${file.name}" 吗? 此操作无法撤销。`,
+                  onConfirm: async () => {
+                      try {
+                          await deleteItem(file.path);
+                          fetchFiles(currentPath);
+                          showToast('删除成功');
+                      } catch (err) {
+                          showToast('删除失败: ' + err.message, 'error');
+                      }
+                      setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+                  }
+              });
           } else if (action === 'hide') {
               toggleHidden(file.path);
               showToast('已更新显示状态');
           } else if (action === 'new-folder') {
-              const name = prompt('请输入文件夹名称 (Folder Name):', '新建文件夹');
-              if (name) {
-                  // Construct path. Note: Windows uses backslash, but Node handles it. 
-                  // We need to append to currentPath.
-                  // Need to handle trailing slash logic safely
-                  const separator = currentPath.includes('/') ? '/' : '\\';
-                  const newPath = `${currentPath}${separator}${name}`;
-                  await createFolder(newPath);
-                  fetchFiles(currentPath);
-                  showToast('文件夹创建成功');
-              }
+              const baseName = '新建文件夹';
+              const name = getUniqueName(baseName);
+              const separator = currentPath.includes('/') ? '/' : '\\';
+              const newPath = `${currentPath}${separator}${name}`;
+              
+              await createFolder(newPath);
+              await fetchFiles(currentPath);
+              setRenamingName(name);
           } else if (action.startsWith('new-file-')) {
               const type = action.replace('new-file-', '');
               const extMap = {
@@ -168,30 +207,22 @@ function App() {
                   'ppt': '.ppt',
                   'pptx': '.pptx'
               };
+              const typeNameMap = {
+                  'txt': '文本文档',
+                  'docx': 'Word 文档',
+                  'xlsx': 'Excel 工作表',
+                  'pptx': 'PPT 演示文稿'
+              };
               const ext = extMap[type] || '';
-              const defaultName = `新建文件${ext}`;
+              const baseName = `新建${typeNameMap[type] || '文件'}`;
               
-              const name = prompt(`请输入文件名 (File Name):`, defaultName);
-              if (name) {
-                  let finalName = name;
-                  // Only append extension if not present
-                  if (!finalName.toLowerCase().endsWith(ext)) {
-                      finalName += ext;
-                  }
-                  
-                  // Basic validation
-                  const invalidChars = /[<>:"/\\|?*]/;
-                  if (invalidChars.test(finalName)) {
-                      showToast('文件名包含非法字符', 'error');
-                      return;
-                  }
-
-                  const separator = currentPath.includes('/') ? '/' : '\\';
-                  const newPath = `${currentPath}${separator}${finalName}`;
-                  await createFile(newPath);
-                  fetchFiles(currentPath);
-                  showToast('文件创建成功');
-              }
+              const name = getUniqueName(baseName, ext);
+              const separator = currentPath.includes('/') ? '/' : '\\';
+              const newPath = `${currentPath}${separator}${name}`;
+              
+              await createFile(newPath);
+              await fetchFiles(currentPath);
+              setRenamingName(name);
           } else if (action === 'properties') {
               alert(`名称: ${file.name}\n路径: ${file.path}\n类型: ${file.isDirectory ? '文件夹' : '文件'}`);
           } else if (action === 'refresh') {
@@ -200,6 +231,7 @@ function App() {
           }
       } catch (err) {
           showToast('操作失败: ' + err.message, 'error');
+          setRenamingName(null);
       }
   };
 
@@ -250,6 +282,8 @@ function App() {
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
+                    renamingName={renamingName}
+                    onRenameSubmit={handleRenameSubmit}
                 />
             ) : (
                 <FileList 
@@ -258,6 +292,8 @@ function App() {
                     onContextMenu={handleContextMenu}
                     depth={depth}
                     isHidden={isHidden}
+                    renamingName={renamingName}
+                    onRenameSubmit={handleRenameSubmit}
                 />
             )}
             
@@ -273,6 +309,7 @@ function App() {
       <SettingsModal 
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
+        showToast={showToast}
       />
 
       <ContextMenu 
@@ -282,6 +319,14 @@ function App() {
         fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null })}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
 
       <Toast 

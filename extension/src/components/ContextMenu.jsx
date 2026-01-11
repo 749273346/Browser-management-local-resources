@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType } from 'lucide-react';
+import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText } from 'lucide-react';
 
 export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden }) {
   const menuRef = useRef(null);
@@ -15,6 +15,27 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden 
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [onClose]);
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const buttons = menuRef.current.querySelectorAll('button');
+      const currentIndex = Array.from(buttons).indexOf(document.activeElement);
+      let nextIndex;
+      
+      if (currentIndex === -1) {
+        nextIndex = 0;
+      } else if (e.key === 'ArrowDown') {
+        nextIndex = (currentIndex + 1) % buttons.length;
+      } else {
+        nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+      }
+      
+      buttons[nextIndex]?.focus();
+    } else if (e.key === 'Escape') {
+      onClose();
+    }
+  };
 
   if (x === null || y === null) return null;
 
@@ -44,7 +65,9 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden 
     <div
       ref={menuRef}
       style={style}
-      className="fixed z-50 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left"
+      className="fixed z-50 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left focus:outline-none"
+      onKeyDown={handleKeyDown}
+      tabIndex={-1}
     >
       {file ? (
         // File/Folder Context Menu
@@ -70,6 +93,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden 
         <>
           <MenuHeader title="新建 (New)" />
           <MenuItem icon={FolderPlus} label="文件夹 (Folder)" onClick={() => onAction('new-folder')} />
+          <MenuItem icon={FileText} label="文本文档 (.txt)" onClick={() => onAction('new-file-txt')} />
           <MenuItem icon={FileType} label="Word 文档 (.docx)" onClick={() => onAction('new-file-docx')} />
           <MenuItem icon={FileSpreadsheet} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx')} />
           <MenuItem icon={FilePlus} label="PPT 演示文稿 (.pptx)" onClick={() => onAction('new-file-pptx')} />

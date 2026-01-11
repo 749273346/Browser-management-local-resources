@@ -41,7 +41,7 @@ const PRESET_WALLPAPERS = [
   }
 ];
 
-export default function SettingsModal({ isOpen, onClose }) {
+export default function SettingsModal({ isOpen, onClose, showToast }) {
   const [activeTab, setActiveTab] = useState('appearance');
   
   // Settings State
@@ -141,7 +141,12 @@ export default function SettingsModal({ isOpen, onClose }) {
       // In a real app we'd use a toast. For now, we can maybe use a small state or just reliance on visual change.
       // But user requested feedback.
       // Let's rely on the global UI feedback todo for a toast system later, or add a simple one here.
-      alert('背景已成功应用！');
+      if (showToast) {
+          showToast('背景已成功应用！');
+      } else {
+          // Fallback if showToast is not provided (shouldn't happen if properly passed)
+          // alert('背景已成功应用！');
+      }
   };
 
   const handleThemeChange = (themeKey) => {

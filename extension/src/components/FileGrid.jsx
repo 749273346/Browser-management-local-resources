@@ -2,7 +2,7 @@ import { Folder, File, FileImage, FileText, FileCode, EyeOff } from 'lucide-reac
 
 const getFileIcon = (name, isDirectory) => {
     // Railway themed folder icon logic could go here later
-    if (isDirectory) return <Folder className="text-primary-500 fill-primary-50" size={48} strokeWidth={1.5} />;
+    if (isDirectory) return <Folder className="text-yellow-400 fill-yellow-100" size={48} strokeWidth={1} />;
     
     const ext = name.split('.').pop().toLowerCase();
     switch (ext) {
@@ -10,31 +10,33 @@ const getFileIcon = (name, isDirectory) => {
         case 'jpg':
         case 'jpeg':
         case 'gif':
-            return <FileImage className="text-purple-500" size={48} strokeWidth={1.5} />;
+            return <FileImage className="text-purple-500" size={48} strokeWidth={1} />;
         case 'txt':
         case 'md':
-            return <FileText className="text-gray-500 dark:text-slate-300" size={48} strokeWidth={1.5} />;
+            return <FileText className="text-gray-500 dark:text-slate-300" size={48} strokeWidth={1} />;
         case 'js':
         case 'jsx':
         case 'ts':
         case 'tsx':
         case 'json':
-            return <FileCode className="text-blue-500" size={48} strokeWidth={1.5} />;
+            return <FileCode className="text-blue-500" size={48} strokeWidth={1} />;
         default:
-            return <File className="text-gray-400 dark:text-slate-400" size={48} strokeWidth={1.5} />;
+            return <File className="text-gray-400 dark:text-slate-400" size={48} strokeWidth={1} />;
     }
 };
 
-export default function FileGrid({ files, onNavigate, onContextMenu, isHidden }) {
+export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, renamingName, onRenameSubmit }) {
   return (
     <div className="flex flex-col h-full">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 p-6">
         {files.map((file, i) => {
             const hidden = isHidden ? isHidden(file.path) : false;
+            const isRenaming = renamingName === file.name;
+            
             return (
                 <div 
                 key={i}
-                onClick={() => onNavigate(file)}
+                onClick={() => !isRenaming && onNavigate(file)}
                 onContextMenu={(e) => {
                     e.preventDefault(); // Prevent default context menu
                     e.stopPropagation(); // Stop propagation to parent
@@ -43,9 +45,10 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden })
                 className={`
                     group flex flex-col items-center p-4 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm 
                     hover:shadow-xl hover:border-primary-200 dark:hover:border-primary-500/40 cursor-pointer transition-all duration-300 ease-out
-                    hover:-translate-y-1
+                    ${!isRenaming && 'hover:-translate-y-1'}
                     backdrop-blur-[var(--glass-blur)]
                     ${hidden ? 'opacity-40 grayscale border-dashed' : 'bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60'}
+                    ${isRenaming ? 'ring-2 ring-primary-500 bg-white dark:bg-slate-800 !opacity-100' : ''}
                 `}
                 >
                 <div className="mb-4 transition-transform group-hover:scale-110 duration-300 relative">
@@ -56,9 +59,39 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden })
                         </div>
                     )}
                 </div>
-                <span className="text-sm text-center text-gray-700 dark:text-slate-200 font-medium break-all line-clamp-2 w-full px-1 leading-tight group-hover:text-primary-800 dark:group-hover:text-primary-200 transition-colors">
-                    {file.name}
-                </span>
+                
+                {isRenaming ? (
+                    <input
+                        type="text"
+                        defaultValue={file.name}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                e.target.blur();
+                            } else if (e.key === 'Escape') {
+                                e.preventDefault();
+                                onRenameSubmit(file, file.name); // Cancel
+                            }
+                        }}
+                        onBlur={(e) => onRenameSubmit(file, e.target.value)}
+                        onFocus={(e) => {
+                            // Select filename without extension if possible, or just all
+                            const dotIndex = file.name.lastIndexOf('.');
+                            if (dotIndex > 0 && !file.isDirectory) {
+                                e.target.setSelectionRange(0, dotIndex);
+                            } else {
+                                e.target.select();
+                            }
+                        }}
+                        className="w-full text-center text-sm px-1 py-0.5 border border-primary-500 rounded bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-0"
+                    />
+                ) : (
+                    <span className="text-sm text-center text-gray-700 dark:text-slate-200 font-medium break-all line-clamp-2 w-full px-1 leading-tight group-hover:text-primary-800 dark:group-hover:text-primary-200 transition-colors">
+                        {file.name}
+                    </span>
+                )}
                 </div>
             );
         })}
