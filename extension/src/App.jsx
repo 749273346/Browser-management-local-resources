@@ -13,6 +13,46 @@ import ConfirmDialog from './components/ConfirmDialog'
 import { applyTheme, applyColorMode } from './theme'
 import { COLUMN_COLORS } from './constants/theme'
 
+const normalizePathKey = (p) => {
+  if (!p) return ''
+  return p.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase()
+}
+
+const getRootKey = () => normalizePathKey(localStorage.getItem('rootPath'))
+
+const getTopLevelFolderKey = (p, rootKey = getRootKey()) => {
+  const np = normalizePathKey(p)
+  if (!np || !rootKey) return ''
+  if (!np.startsWith(rootKey)) return ''
+  const relative = np.slice(rootKey.length).replace(/^\/+/, '')
+  const first = relative.split('/')[0]
+  if (!first) return ''
+  return `${rootKey}/${first}`
+}
+
+const isTopLevelFolderPath = (p, rootKey = getRootKey()) => {
+  const np = normalizePathKey(p)
+  const top = getTopLevelFolderKey(np, rootKey)
+  return !!top && np === top
+}
+
+const sanitizeFolderColors = (raw, rootKey = getRootKey()) => {
+  const next = {}
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (!v) continue
+    const nk = normalizePathKey(k)
+    if (!nk) continue
+    if (rootKey) {
+      if (nk === getTopLevelFolderKey(nk, rootKey)) {
+        next[nk] = v
+      }
+    } else {
+      next[nk] = v
+    }
+  }
+  return next
+}
+
 function App() {
   const { 
     files, 
@@ -76,7 +116,8 @@ function App() {
   // Folder Colors State
   const [folderColors, setFolderColors] = useState(() => {
       try {
-          return JSON.parse(localStorage.getItem('folderColors') || '{}');
+          const raw = JSON.parse(localStorage.getItem('folderColors') || '{}')
+          return sanitizeFolderColors(raw)
       } catch {
           return {};
       }
@@ -132,14 +173,26 @@ function App() {
       if (glassBlur) root.style.setProperty('--glass-blur', `${glassBlur}px`);
   }, []);
   
-  // Helper to normalize paths for comparison
-  const normalizePath = (p) => {
-      if (!p) return '';
-      return p.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
-  };
-
-  const isRoot = normalizePath(path) === normalizePath(localStorage.getItem('rootPath'));
+  const isRoot = normalizePathKey(path) === normalizePathKey(localStorage.getItem('rootPath'));
   const depth = isRoot ? 0 : 1;
+
+  useEffect(() => {
+      try {
+          const raw = JSON.parse(localStorage.getItem('folderColors') || '{}')
+          const next = sanitizeFolderColors(raw)
+          const rawJson = JSON.stringify(raw || {})
+          const nextJson = JSON.stringify(next)
+          if (rawJson !== nextJson) {
+              localStorage.setItem('folderColors', nextJson)
+          }
+          setFolderColors(prev => {
+              const prevJson = JSON.stringify(prev || {})
+              return prevJson === nextJson ? prev : next
+          })
+      } catch {
+          setFolderColors(prev => prev)
+      }
+  }, []);
 
   // Initial Load
   useEffect(() => {
@@ -161,9 +214,12 @@ function App() {
       setFolderColors(prev => {
           let changed = false;
           const next = { ...prev };
+          const rootKey = getRootKey();
           rootFolders.forEach((folder, index) => {
-              if (next[folder.path]) return;
-              next[folder.path] = COLUMN_COLORS[index % COLUMN_COLORS.length].id;
+              const folderKey = getTopLevelFolderKey(folder.path, rootKey) || normalizePathKey(folder.path);
+              if (!folderKey) return;
+              if (next[folderKey]) return;
+              next[folderKey] = COLUMN_COLORS[index % COLUMN_COLORS.length].id;
               changed = true;
           });
           if (changed) {
@@ -260,7 +316,15 @@ function App() {
       try {
           if (action === 'set-color') {
               setFolderColors(prev => {
-                  const next = { ...prev, [file.path]: extraData };
+                  const rootKey = getRootKey();
+                  const folderKey = getTopLevelFolderKey(file.path, rootKey);
+                  if (!folderKey) return prev;
+                  const next = { ...prev };
+                  if (!extraData) {
+                      delete next[folderKey];
+                  } else {
+                      next[folderKey] = extraData;
+                  }
                   localStorage.setItem('folderColors', JSON.stringify(next));
                   return next;
               });
@@ -430,7 +494,7 @@ function App() {
         fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null })}
-        isLevel1={isRoot}
+        isLevel1={isRoot && !!contextMenu.file?.isDirectory && isTopLevelFolderPath(contextMenu.file.path)}
       />
 
       <ConfirmDialog

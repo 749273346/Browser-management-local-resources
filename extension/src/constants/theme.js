@@ -72,31 +72,33 @@ export const getThemeColor = (id) => COLUMN_COLORS.find(c => c.id === id);
 export const getEffectiveColorScheme = (path, folderColors) => {
     if (!path || !folderColors) return null;
 
-    // 1. Direct match
-    if (folderColors[path]) {
-        return getThemeColor(folderColors[path]);
+    const normalize = (p) => (p || '').replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
+    const normalizedPath = normalize(path);
+    if (!normalizedPath) return null;
+
+    const entries = Object.entries(folderColors)
+        .map(([k, v]) => [normalize(k), v])
+        .filter(([k, v]) => !!k && !!v);
+
+    // 1. Direct match (normalized)
+    for (const [k, v] of entries) {
+        if (k === normalizedPath) {
+            return getThemeColor(v) || null;
+        }
     }
 
-    // 2. Inheritance (check ancestors)
-    // We sort keys by length descending to find the closest parent first, though technically any parent sets the tone
-    // But logic in Dashboard was just finding *any* parent. Let's find the closest one.
-    // Actually Dashboard logic: `Object.keys(folderColors).find(...)`. This is not deterministic if multiple parents have colors.
-    // Let's implement a robust "closest parent" check.
-    
-    // Normalize path separators
-    const normalizedPath = path.replace(/\\/g, '/');
-    
-    const parents = Object.keys(folderColors).filter(parentPath => {
-        const normalizedParent = parentPath.replace(/\\/g, '/');
-        return normalizedPath.startsWith(normalizedParent) && 
-               (normalizedPath[normalizedParent.length] === '/' || normalizedPath.length === normalizedParent.length);
-    });
-
-    if (parents.length > 0) {
-        // Find the longest parent path (closest ancestor)
-        const closestParent = parents.reduce((a, b) => a.length > b.length ? a : b);
-        return getThemeColor(folderColors[closestParent]);
+    // 2. Inheritance (closest ancestor)
+    let closestKey = '';
+    let closestId = '';
+    for (const [k, v] of entries) {
+        if (!normalizedPath.startsWith(k)) continue;
+        if (!(normalizedPath[k.length] === '/' || normalizedPath.length === k.length)) continue;
+        if (k.length > closestKey.length) {
+            closestKey = k;
+            closestId = v;
+        }
     }
+    if (closestKey) return getThemeColor(closestId) || null;
 
     return null;
 };
