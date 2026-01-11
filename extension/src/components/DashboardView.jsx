@@ -1,0 +1,159 @@
+import { Folder, File, FileImage, FileText, FileCode, ChevronRight, EyeOff } from 'lucide-react';
+
+// Color palette for columns (Railway theme inspired)
+const COLUMN_COLORS = [
+    { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-800', header: 'bg-yellow-100 dark:bg-yellow-900/40', text: 'text-yellow-800 dark:text-yellow-200' },
+    { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', header: 'bg-green-100 dark:bg-green-900/40', text: 'text-green-800 dark:text-green-200' },
+    { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', header: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-800 dark:text-red-200' },
+    { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', header: 'bg-blue-100 dark:bg-blue-900/40', text: 'text-blue-800 dark:text-blue-200' },
+    { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800', header: 'bg-purple-100 dark:bg-purple-900/40', text: 'text-purple-800 dark:text-purple-200' },
+];
+
+const getFileIcon = (name, isDirectory) => {
+    if (isDirectory) return <Folder className="text-primary-500 fill-primary-50" size={20} />;
+    
+    const ext = name.split('.').pop().toLowerCase();
+    switch (ext) {
+        case 'png': case 'jpg': case 'jpeg': case 'gif':
+            return <FileImage className="text-purple-500" size={20} />;
+        case 'txt': case 'md':
+            return <FileText className="text-gray-500" size={20} />;
+        case 'js': case 'jsx': case 'ts': case 'tsx': case 'json':
+            return <FileCode className="text-blue-500" size={20} />;
+        default:
+            return <File className="text-gray-400" size={20} />;
+    }
+};
+
+export default function DashboardView({ files, onNavigate, onContextMenu, isHidden }) {
+    // Separate folders (Columns) and loose files
+    const folders = files.filter(f => f.isDirectory);
+    const looseFiles = files.filter(f => !f.isDirectory);
+
+    return (
+        <div className="flex flex-col h-full p-6 space-y-6">
+            {/* Header / Loose Files Area */}
+            {looseFiles.length > 0 && (
+                <div className="glass-effect rounded-2xl p-4">
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-2">
+                        文件 ({looseFiles.length})
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {looseFiles.map((file, i) => {
+                            const hidden = isHidden ? isHidden(file.path) : false;
+                            return (
+                                <div
+                                    key={i}
+                                    onClick={() => onNavigate(file)}
+                                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, file); }}
+                                    className={`
+                                        group flex items-center p-2 rounded-lg cursor-pointer transition-all
+                                        ${hidden ? 'opacity-50 grayscale border-dashed border border-gray-300' : 'bg-white/60 dark:bg-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md'}
+                                    `}
+                                >
+                                    <div className="mr-3">{getFileIcon(file.name, false)}</div>
+                                    <span className="text-sm text-gray-700 dark:text-slate-200 font-medium truncate flex-1">{file.name}</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Columns Container */}
+            <div className="flex-1 overflow-x-auto pb-4">
+                <div className="flex space-x-6 min-w-max h-full">
+                    {folders.map((folder, index) => {
+                        const color = COLUMN_COLORS[index % COLUMN_COLORS.length];
+                        const hidden = isHidden ? isHidden(folder.path) : false;
+                        const children = folder.children || [];
+
+                        return (
+                            <div 
+                                key={index}
+                                className={`
+                                    w-80 flex flex-col rounded-2xl border shadow-sm backdrop-blur-md transition-all h-full max-h-full
+                                    ${color.bg} ${color.border}
+                                    ${hidden ? 'opacity-60 grayscale' : ''}
+                                `}
+                                style={{
+                                    backdropFilter: 'blur(var(--glass-blur))',
+                                    // We mix the column color with a bit of glass opacity logic if needed, 
+                                    // but these columns use specific colors (yellow, green etc).
+                                    // Let's keep their specific colors but ensure blur works.
+                                }}
+                            >
+                                {/* Column Header */}
+                                <div 
+                                    className={`p-4 rounded-t-2xl border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group`}
+                                    onClick={() => onNavigate(folder)}
+                                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, folder); }}
+                                >
+                                    <h3 className={`text-lg font-bold ${color.text} truncate flex-1 flex items-center`}>
+                                        {folder.name}
+                                        {hidden && <EyeOff size={16} className="ml-2 opacity-50"/>}
+                                    </h3>
+                                    <ChevronRight size={20} className={`${color.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                </div>
+
+                                {/* Column Content (List) */}
+                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2">
+                                    {children.length > 0 ? (
+                                        children.map((child, childIndex) => {
+                                            const childHidden = isHidden ? isHidden(child.path) : false;
+                                            return (
+                                                <div
+                                                    key={childIndex}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onNavigate(child);
+                                                    }}
+                                                    onContextMenu={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        if(onContextMenu) onContextMenu(e, child);
+                                                    }}
+                                                    className={`
+                                                        flex items-center p-3 rounded-xl cursor-pointer transition-all border
+                                                        ${childHidden ? 'opacity-50 grayscale border-dashed border-gray-400' : 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:-translate-y-0.5'}
+                                                    `}
+                                                >
+                                                    <div className="mr-3 text-gray-500 dark:text-slate-400">
+                                                        {getFileIcon(child.name, child.isDirectory)}
+                                                    </div>
+                                                    <span className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate flex-1">
+                                                        {child.name}
+                                                    </span>
+                                                    {child.isDirectory && (
+                                                        <ChevronRight size={14} className="text-gray-400" />
+                                                    )}
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-400 dark:text-slate-500 text-sm italic">
+                                            (空)
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                {/* Column Footer (Action?) */}
+                                <div className={`p-2 rounded-b-2xl border-t ${color.border} bg-white/10 text-center`}>
+                                    <span className={`text-xs font-medium ${color.text} opacity-60`}>
+                                        {children.length} 项
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    {folders.length === 0 && looseFiles.length === 0 && (
+                        <div className="flex flex-col items-center justify-center w-full h-64 text-gray-500">
+                            <span className="text-lg">暂无内容</span>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}

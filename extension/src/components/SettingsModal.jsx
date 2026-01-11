@@ -258,12 +258,15 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
         onMouseDown={() => setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false })}
     >
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden"
+        className="glass-effect rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden border-0"
         onMouseDown={(e) => e.stopPropagation()}
         onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        style={{
+             backgroundColor: colorMode === 'night' ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'
+        }}
       >
         {/* Sidebar */}
-        <div className="w-48 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 p-4 flex flex-col">
+        <div className="w-48 bg-gray-50/50 dark:bg-slate-950/50 border-r border-gray-200 dark:border-slate-800 p-4 flex flex-col backdrop-blur-sm">
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4 px-2">设置</h2>
             
             <div className="flex flex-col space-y-2">

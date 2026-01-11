@@ -1,10 +1,28 @@
-import { Settings, Train, ChevronRight, LayoutGrid, List, Eye, EyeOff } from 'lucide-react';
+import { Settings, Train, ChevronRight, LayoutGrid, List, Eye, EyeOff, Kanban } from 'lucide-react';
 
 export default function TopBar({ currentPath, onNavigate, onReset, onOpenSettings, viewMode, onToggleView, showHidden, onToggleHidden }) {
   // Normalize path to use forward slashes for easier splitting, but keep track of original separator if possible
   // Actually, for display, just splitting by either is fine.
   const parts = currentPath ? currentPath.split(/[\\/]/).filter(Boolean) : [];
   
+  const getNextViewMode = () => {
+    if (viewMode === 'dashboard') return 'grid';
+    if (viewMode === 'grid') return 'list';
+    return 'dashboard';
+  };
+
+  const getViewIcon = () => {
+    if (viewMode === 'dashboard') return <Kanban size={20} />;
+    if (viewMode === 'grid') return <LayoutGrid size={20} />;
+    return <List size={20} />;
+  };
+
+  const getViewTitle = () => {
+    if (viewMode === 'dashboard') return '切换到网格视图';
+    if (viewMode === 'grid') return '切换到列表视图';
+    return '切换到看板视图';
+  };
+
   const handleBreadcrumbClick = (index) => {
       // Reconstruct path
       // Determine separator based on what's likely used in currentPath
@@ -26,7 +44,7 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
   };
 
   return (
-    <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-white/20 dark:border-white/10 px-6 py-3 flex items-center shadow-sm sticky top-0 z-10 h-16 transition-colors duration-300">
+    <div className="glass-effect px-6 py-3 flex items-center shadow-sm sticky top-0 z-10 h-16 transition-colors duration-300">
       {/* Home Button / Reset */}
       <button 
         onClick={onReset}
@@ -79,11 +97,11 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
         </button>
 
         <button
-            onClick={onToggleView}
+            onClick={() => onToggleView(getNextViewMode())}
             className="p-2 text-gray-600 dark:text-slate-300 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-white/50 dark:hover:bg-slate-800/60 rounded-full transition-colors"
-            title={viewMode === 'grid' ? '切换到列表视图' : '切换到网格视图'}
+            title={getViewTitle()}
         >
-            {viewMode === 'grid' ? <List size={20} /> : <LayoutGrid size={20} />}
+            {getViewIcon()}
         </button>
 
         <button 

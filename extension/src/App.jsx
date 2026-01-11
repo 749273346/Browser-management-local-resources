@@ -5,6 +5,7 @@ import WelcomeScreen from './components/WelcomeScreen'
 import TopBar from './components/TopBar'
 import FileGrid from './components/FileGrid'
 import FileList from './components/FileList'
+import DashboardView from './components/DashboardView'
 import SettingsModal from './components/SettingsModal'
 import ContextMenu from './components/ContextMenu'
 import Toast from './components/Toast'
@@ -28,10 +29,64 @@ function App() {
   const { toggleHidden, isHidden, showHidden, toggleShowHidden } = useHiddenFiles();
 
   // Filter files based on hidden status
-  const visibleFiles = files.filter(file => showHidden || !isHidden(file.path));
+  // For dashboard view (recursive), we need to filter children too, 
+  // but the current structure of 'files' is flat for grid/list and nested for dashboard.
+  // Actually, useFileSystem returns nested structure if depth > 1.
+  
+  // We need a deep filter function
+  const filterFiles = (fileList) => {
+      return fileList.filter(file => {
+          const isFileHidden = isHidden(file.path);
+          if (!showHidden && isFileHidden) return false;
+          
+          // If it's a directory and has children, filter them recursively
+          if (file.isDirectory && file.children) {
+              file.children = filterFiles(file.children);
+          }
+          return true;
+      });
+  };
+
+  // We need to clone the files array to avoid mutating state directly when filtering children
+  const visibleFiles = filterFiles(JSON.parse(JSON.stringify(files)));
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  
+  // Try to get path from URL params first (for multi-tab nav), then localStorage
+  const getInitialPath = () => {
+    const params = new URLSearchParams(window.location.search);
+    const pathFromUrl = params.get('path');
+    if (pathFromUrl) return pathFromUrl;
+    
+    return localStorage.getItem('rootPath') || '';
+  };
+
+  const [path, setPath] = useState(getInitialPath());
+
+  // View Mode State (Per folder)
+  const [folderViewModes, setFolderViewModes] = useState(() => {
+      try {
+          return JSON.parse(localStorage.getItem('folderViewModes') || '{}');
+      } catch {
+          return {};
+      }
+  });
+
+  // Get view mode for current path (default to 'dashboard')
+  // We should use 'path' state which is the source of truth for navigation in App.jsx
+  const currentViewMode = folderViewModes[path] || 'dashboard';
+
+  const handleToggleView = (newMode) => {
+      setFolderViewModes(prev => {
+          // Use 'path' state instead of 'currentPath' to ensure we update the view mode for the currently displayed folder
+          // 'currentPath' from useFileSystem might lag slightly or be the parent of what we want to configure
+          // But actually, 'path' state in App.jsx is what drives the navigation.
+          const targetPath = path; 
+          const next = { ...prev, [targetPath]: newMode };
+          localStorage.setItem('folderViewModes', JSON.stringify(next));
+          return next;
+      });
+  };
   
   // Toast State
   const [toast, setToast] = useState({ message: '', type: 'success' });
@@ -49,17 +104,6 @@ function App() {
     message: '', 
     onConfirm: null 
   });
-
-  // Try to get path from URL params first (for multi-tab nav), then localStorage
-  const getInitialPath = () => {
-    const params = new URLSearchParams(window.location.search);
-    const pathFromUrl = params.get('path');
-    if (pathFromUrl) return pathFromUrl;
-    
-    return localStorage.getItem('rootPath') || '';
-  };
-
-  const [path, setPath] = useState(getInitialPath());
   
   // Initialize Theme and Background
   useEffect(() => {
@@ -84,9 +128,12 @@ function App() {
   // Initial Load
   useEffect(() => {
     if (path) {
-      fetchFiles(path);
+      // Determine view mode for the target path to fetch correct depth
+      // We need to look up the mode for 'path', not 'currentPath' (which might be stale)
+      const mode = folderViewModes[path] || 'dashboard';
+      fetchFiles(path, mode === 'dashboard' ? 2 : 1);
     }
-  }, [path, fetchFiles]);
+  }, [path, fetchFiles, folderViewModes]); // Added folderViewModes dependency to refetch if mode changes
 
   const handleSetRoot = (newPath) => {
     localStorage.setItem('rootPath', newPath);
@@ -95,23 +142,31 @@ function App() {
   };
 
   const handleNavigate = (file) => {
-    if (file.isDirectory) {
-      // If folder is empty, open in system explorer directly
-      if (file.isEmpty) {
-        openInExplorer(file.path);
-        return;
-      }
+    // If folder is empty, open in system explorer directly
+    if (file.isDirectory && file.isEmpty) {
+      openInExplorer(file.path);
+      return;
+    }
 
+    if (file.isDirectory) {
       // Update URL for persistence (supports refresh)
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('path', file.path);
       window.history.pushState({}, '', newUrl.toString());
 
-      // Navigate within the app
-      fetchFiles(file.path);
+      // Update state path to trigger effect
+      // useEffect will handle the fetchFiles call
+      setPath(file.path);
     } else {
       openInExplorer(file.path);
     }
+  };
+  
+  const handlePathNavigate = (newPath) => {
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('path', newPath);
+      window.history.pushState({}, '', newUrl.toString());
+      setPath(newPath);
   };
   
   const handleReset = () => {
@@ -145,7 +200,7 @@ function App() {
           const newPath = parentPath + newName;
           
           await renameItem(file.path, newPath);
-          fetchFiles(currentPath);
+          fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
           showToast('重命名成功');
       } catch (err) {
           showToast('重命名失败: ' + err.message, 'error');
@@ -176,7 +231,7 @@ function App() {
                   onConfirm: async () => {
                       try {
                           await deleteItem(file.path);
-                          fetchFiles(currentPath);
+                          fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
                           showToast('删除成功');
                       } catch (err) {
                           showToast('删除失败: ' + err.message, 'error');
@@ -190,11 +245,11 @@ function App() {
           } else if (action === 'new-folder') {
               const baseName = '新建文件夹';
               const name = getUniqueName(baseName);
-              const separator = currentPath.includes('/') ? '/' : '\\';
-              const newPath = `${currentPath}${separator}${name}`;
+              const separator = path.includes('/') ? '/' : '\\';
+              const newPath = `${path}${separator}${name}`;
               
               await createFolder(newPath);
-              await fetchFiles(currentPath);
+              await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
               setRenamingName(name);
           } else if (action.startsWith('new-file-')) {
               const type = action.replace('new-file-', '');
@@ -217,16 +272,16 @@ function App() {
               const baseName = `新建${typeNameMap[type] || '文件'}`;
               
               const name = getUniqueName(baseName, ext);
-              const separator = currentPath.includes('/') ? '/' : '\\';
-              const newPath = `${currentPath}${separator}${name}`;
+              const separator = path.includes('/') ? '/' : '\\';
+              const newPath = `${path}${separator}${name}`;
               
               await createFile(newPath);
-              await fetchFiles(currentPath);
+              await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
               setRenamingName(name);
           } else if (action === 'properties') {
               alert(`名称: ${file.name}\n路径: ${file.path}\n类型: ${file.isDirectory ? '文件夹' : '文件'}`);
           } else if (action === 'refresh') {
-              fetchFiles(currentPath);
+              fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
               showToast('已刷新');
           }
       } catch (err) {
@@ -247,12 +302,12 @@ function App() {
     >
       <TopBar 
         currentPath={currentPath} 
-        onNavigate={fetchFiles}
+        onNavigate={handlePathNavigate}
         onReset={handleReset}
         depth={depth}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        viewMode={viewMode}
-        onToggleView={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
+        viewMode={currentViewMode}
+        onToggleView={handleToggleView}
         showHidden={showHidden}
         onToggleHidden={toggleShowHidden}
       />
@@ -276,7 +331,14 @@ function App() {
           </div>
         ) : (
           <>
-            {viewMode === 'grid' ? (
+            {currentViewMode === 'dashboard' ? (
+                <DashboardView 
+                    files={visibleFiles} 
+                    onNavigate={handleNavigate} 
+                    onContextMenu={handleContextMenu}
+                    isHidden={isHidden}
+                />
+            ) : currentViewMode === 'grid' ? (
                 <FileGrid 
                     files={visibleFiles} 
                     onNavigate={handleNavigate} 
@@ -297,7 +359,7 @@ function App() {
                 />
             )}
             
-            {visibleFiles.length === 0 && !loading && (
+            {visibleFiles.length === 0 && !loading && currentViewMode !== 'dashboard' && (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500 bg-white/30 backdrop-blur-sm rounded-2xl mx-8 mt-8 border border-white/20">
                     <span className="text-lg">暂无物资</span>
                 </div>

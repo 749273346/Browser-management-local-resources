@@ -70,23 +70,19 @@ export const applyColorMode = (mode) => {
 export const applyTheme = (themeName) => {
   const theme = themes[themeName] || themes['high-speed'];
   const root = document.documentElement;
-  const colorMode = applyColorMode(localStorage.getItem('colorMode') || 'day');
+  // Don't re-apply color mode here, just read it
+  const colorMode = localStorage.getItem('colorMode') || 'day';
   
   Object.entries(theme.colors).forEach(([key, value]) => {
-    // We map these to CSS variables that Tailwind can use if we configure it right,
-    // or just use them directly in style props.
-    // For Tailwind config compatibility, we might need to rely on style attributes or a wrapper.
     root.style.setProperty(`--color-${key}`, value);
   });
   
   root.style.setProperty('--bg-gradient', theme.bgGradient);
 
+  // Apply dark mode overrides if needed, but rely mostly on CSS variables and Tailwind classes
   if (colorMode === 'night') {
-    root.style.setProperty('--color-surface', '#0B1220');
-    root.style.setProperty('--color-surfaceVariant', '#111827');
-    root.style.setProperty('--color-background', '#0B1220');
-    root.style.setProperty('--color-outline', '#334155');
-    root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #0B1220 0%, #111827 100%)');
+    // Only override specific semantic colors if they differ from the palette
+    // But mostly we trust the .dark class and Tailwind
   }
   
   // Save preference

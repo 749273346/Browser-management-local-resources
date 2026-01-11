@@ -27,7 +27,7 @@ const getFileIcon = (name, isDirectory) => {
 export default function FileList({ files, onNavigate, onContextMenu, depth, isHidden, renamingName, onRenameSubmit }) {
   return (
     <div className="flex flex-col pb-2">
-      <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider bg-white/50 dark:bg-slate-900/60 backdrop-blur-md sticky top-0 border-b border-white/20 dark:border-white/10 z-10">
+      <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider glass-effect sticky top-0 z-10">
         {depth === 1 ? '内容列表' : '文件列表'}
       </div>
       

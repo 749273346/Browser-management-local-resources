@@ -8,12 +8,15 @@ export function useFileSystem() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchFiles = useCallback(async (path = '') => {
+  const fetchFiles = useCallback(async (path = '', depth = 1) => {
     setLoading(true);
     setError(null);
     try {
-      const url = path ? `${API_BASE}/files?path=${encodeURIComponent(path)}` : `${API_BASE}/files`;
-      const res = await fetch(url);
+      const url = new URL(`${API_BASE}/files`);
+      if (path) url.searchParams.set('path', path);
+      if (depth > 1) url.searchParams.set('depth', depth);
+      
+      const res = await fetch(url.toString());
       if (!res.ok) throw new Error('Failed to fetch files');
       const data = await res.json();
       setFiles(data.files);
