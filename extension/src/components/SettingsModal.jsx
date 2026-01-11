@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder, Sun, Moon } from 'lucide-react';
+import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder, Sun, Moon, LogOut } from 'lucide-react';
 import { themes, applyTheme, applyColorMode } from '../theme';
 import Button from './Button';
 
@@ -250,6 +250,13 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
       }
   };
 
+  const handleLogout = () => {
+      if (confirm('确定要退出当前资源库并返回初始界面吗？')) {
+          localStorage.removeItem('rootPath');
+          window.location.href = 'index.html';
+      }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -483,6 +490,15 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                     更改目录
                                 </Button>
                             </div>
+                            
+                            <Button 
+                                variant="danger" 
+                                className="w-full justify-center mt-2"
+                                onClick={handleLogout}
+                                icon={LogOut}
+                            >
+                                退出资源库
+                            </Button>
                         </div>
 
                         <div>
