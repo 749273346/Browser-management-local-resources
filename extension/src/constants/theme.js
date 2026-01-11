@@ -68,3 +68,35 @@ export const COLUMN_COLORS = [
 ];
 
 export const getThemeColor = (id) => COLUMN_COLORS.find(c => c.id === id);
+
+export const getEffectiveColorScheme = (path, folderColors) => {
+    if (!path || !folderColors) return null;
+
+    // 1. Direct match
+    if (folderColors[path]) {
+        return getThemeColor(folderColors[path]);
+    }
+
+    // 2. Inheritance (check ancestors)
+    // We sort keys by length descending to find the closest parent first, though technically any parent sets the tone
+    // But logic in Dashboard was just finding *any* parent. Let's find the closest one.
+    // Actually Dashboard logic: `Object.keys(folderColors).find(...)`. This is not deterministic if multiple parents have colors.
+    // Let's implement a robust "closest parent" check.
+    
+    // Normalize path separators
+    const normalizedPath = path.replace(/\\/g, '/');
+    
+    const parents = Object.keys(folderColors).filter(parentPath => {
+        const normalizedParent = parentPath.replace(/\\/g, '/');
+        return normalizedPath.startsWith(normalizedParent) && 
+               (normalizedPath[normalizedParent.length] === '/' || normalizedPath.length === normalizedParent.length);
+    });
+
+    if (parents.length > 0) {
+        // Find the longest parent path (closest ancestor)
+        const closestParent = parents.reduce((a, b) => a.length > b.length ? a : b);
+        return getThemeColor(folderColors[closestParent]);
+    }
+
+    return null;
+};

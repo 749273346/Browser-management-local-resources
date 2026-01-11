@@ -1,8 +1,18 @@
 import { Folder, File, FileImage, FileText, FileCode, EyeOff } from 'lucide-react';
+import { getEffectiveColorScheme } from '../constants/theme';
 
-const getFileIcon = (name, isDirectory) => {
+const getFileIcon = (name, isDirectory, color = null) => {
     // Railway themed folder icon logic could go here later
-    if (isDirectory) return <Folder className="text-yellow-400 fill-yellow-100" size={48} strokeWidth={1} />;
+    if (isDirectory) {
+        // If color is present, use it for folder icon fill/stroke
+        if (color) {
+             // We can't easily dynamic class for fill in Lucide, so we rely on parent styling or use style prop
+             // But actually, Lucide accepts classNames.
+             // Let's use the color's text class for the folder icon
+             return <Folder className={`${color.text} fill-current opacity-80`} size={48} strokeWidth={1} />;
+        }
+        return <Folder className="text-yellow-400 fill-yellow-100" size={48} strokeWidth={1} />;
+    }
     
     const ext = name.split('.').pop().toLowerCase();
     switch (ext) {
@@ -25,13 +35,14 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, renamingName, onRenameSubmit }) {
+export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, renamingName, onRenameSubmit, folderColors }) {
   return (
     <div className="flex flex-col h-full">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 p-6">
         {files.map((file, i) => {
             const hidden = isHidden ? isHidden(file.path) : false;
             const isRenaming = renamingName === file.name;
+            const colorScheme = file.isDirectory ? getEffectiveColorScheme(file.path, folderColors) : null;
             
             return (
                 <div 
@@ -48,17 +59,18 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, r
                     ${!isRenaming && 'hover:-translate-y-1'}
                     ${hidden ? 'opacity-40 grayscale border-dashed' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}
                     ${isRenaming ? 'ring-2 ring-primary-500 bg-white dark:bg-slate-800 !opacity-100' : ''}
+                    ${colorScheme ? `${colorScheme.bg} ${colorScheme.border}` : ''}
                 `}
                 style={{
                     borderRadius: 'var(--radius-card)',
                     padding: 'var(--spacing-unit)',
                     backdropFilter: 'blur(var(--glass-blur))',
                     borderWidth: 'var(--border-width)',
-                    borderColor: `rgba(var(--border-color-rgb), var(--border-opacity))`
+                    borderColor: colorScheme ? undefined : `rgba(var(--border-color-rgb), var(--border-opacity))`
                 }}
                 >
                 <div className="mb-4 transition-transform group-hover:scale-110 duration-300 relative">
-                    {getFileIcon(file.name, file.isDirectory)}
+                    {getFileIcon(file.name, file.isDirectory, colorScheme)}
                     {hidden && (
                         <div className="absolute -top-1 -right-1 bg-gray-200 dark:bg-slate-700 rounded-full p-0.5">
                             <EyeOff size={12} className="text-gray-500 dark:text-slate-200"/>

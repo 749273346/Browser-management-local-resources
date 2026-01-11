@@ -1,7 +1,13 @@
 import { Folder, File, FileImage, FileText, FileCode, ChevronRight, ExternalLink, EyeOff } from 'lucide-react';
+import { getEffectiveColorScheme } from '../constants/theme';
 
-const getFileIcon = (name, isDirectory) => {
-    if (isDirectory) return <Folder className="text-yellow-400 fill-yellow-100" size={24} strokeWidth={1} />;
+const getFileIcon = (name, isDirectory, color = null) => {
+    if (isDirectory) {
+        if (color) {
+            return <Folder className={`${color.text} fill-current opacity-80`} size={24} strokeWidth={1} />;
+        }
+        return <Folder className="text-yellow-400 fill-yellow-100" size={24} strokeWidth={1} />;
+    }
     
     const ext = name.split('.').pop().toLowerCase();
     switch (ext) {
@@ -24,7 +30,7 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function FileList({ files, onNavigate, onContextMenu, depth, isHidden, renamingName, onRenameSubmit }) {
+export default function FileList({ files, onNavigate, onContextMenu, depth, isHidden, renamingName, onRenameSubmit, folderColors }) {
   return (
     <div className="flex flex-col pb-2">
       <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider glass-effect sticky top-0 z-10">
@@ -35,6 +41,7 @@ export default function FileList({ files, onNavigate, onContextMenu, depth, isHi
         {files.map((file, i) => {
           const hidden = isHidden ? isHidden(file.path) : false;
           const isRenaming = renamingName === file.name;
+          const colorScheme = file.isDirectory ? getEffectiveColorScheme(file.path, folderColors) : null;
 
           return (
               <div 
@@ -48,15 +55,16 @@ export default function FileList({ files, onNavigate, onContextMenu, depth, isHi
               className={`group flex items-center p-3 cursor-pointer transition-colors border hover:border-white/40 dark:hover:border-white/10
                 ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 dark:border-slate-700 hover:bg-white/30 dark:hover:bg-slate-800/40' : 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'}
                 ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
+                ${colorScheme ? `${colorScheme.bg} ${colorScheme.border}` : ''}
               `}
               style={{
                 borderRadius: 'var(--radius-input)',
                 borderWidth: 'var(--border-width)',
-                borderColor: hidden ? undefined : `rgba(var(--border-color-rgb), var(--border-opacity))`
+                borderColor: colorScheme ? undefined : (hidden ? undefined : `rgba(var(--border-color-rgb), var(--border-opacity))`)
               }}
               >
               <div className="mr-4 text-gray-400 dark:text-slate-400 group-hover:text-gray-600 dark:group-hover:text-slate-200 transition-transform group-hover:scale-110 relative">
-                  {getFileIcon(file.name, file.isDirectory)}
+                  {getFileIcon(file.name, file.isDirectory, colorScheme)}
                   {hidden && (
                     <div className="absolute -top-1 -right-1 bg-gray-200 dark:bg-slate-700 rounded-full p-0.5">
                       <EyeOff size={10} className="text-gray-500 dark:text-slate-200" />

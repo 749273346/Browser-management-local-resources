@@ -369,6 +369,7 @@ function App() {
                     isHidden={isHidden}
                     renamingName={renamingName}
                     onRenameSubmit={handleRenameSubmit}
+                    folderColors={folderColors}
                 />
             ) : (
                 <FileList 
@@ -379,6 +380,7 @@ function App() {
                     isHidden={isHidden}
                     renamingName={renamingName}
                     onRenameSubmit={handleRenameSubmit}
+                    folderColors={folderColors}
                 />
             )}
             
