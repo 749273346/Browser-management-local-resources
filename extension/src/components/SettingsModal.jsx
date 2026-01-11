@@ -51,6 +51,21 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [glassBlur, setGlassBlur] = useState(localStorage.getItem('glassBlur') || 12);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'high-speed');
   const [colorMode, setColorMode] = useState(localStorage.getItem('colorMode') || 'day');
+  const [customWallpapers, setCustomWallpapers] = useState(() => {
+      try {
+          return JSON.parse(localStorage.getItem('customWallpapers') || '[]');
+      } catch {
+          return [];
+      }
+  });
+  const [hiddenPresetWallpapers, setHiddenPresetWallpapers] = useState(() => {
+      try {
+          return JSON.parse(localStorage.getItem('hiddenPresetWallpapers') || '[]');
+      } catch {
+          return [];
+      }
+  });
+  const [wallpaperMenu, setWallpaperMenu] = useState({ x: null, y: null, url: '', isCustom: false, isPreset: false });
   
   // Directory State
   const [currentRoot, setCurrentRoot] = useState(localStorage.getItem('rootPath') || '');
@@ -62,6 +77,16 @@ export default function SettingsModal({ isOpen, onClose }) {
           setTempBgImage(normalizeBgValue(localStorage.getItem('bgImage') || ''));
           setCurrentRoot(localStorage.getItem('rootPath') || '');
           setColorMode(localStorage.getItem('colorMode') || 'day');
+          try {
+              setCustomWallpapers(JSON.parse(localStorage.getItem('customWallpapers') || '[]'));
+          } catch {
+              setCustomWallpapers([]);
+          }
+          try {
+              setHiddenPresetWallpapers(JSON.parse(localStorage.getItem('hiddenPresetWallpapers') || '[]'));
+          } catch {
+              setHiddenPresetWallpapers([]);
+          }
           const savedHistory = JSON.parse(localStorage.getItem('pathHistory') || '[]');
           setHistory(savedHistory);
       }
@@ -103,6 +128,14 @@ export default function SettingsModal({ isOpen, onClose }) {
       
       // Save empty string to localStorage if "none" or empty
       localStorage.setItem('bgImage', normalized);
+
+      if (normalized && normalized.startsWith('data:')) {
+          setCustomWallpapers(prev => {
+              const next = prev.includes(normalized) ? prev : [normalized, ...prev].slice(0, 18);
+              localStorage.setItem('customWallpapers', JSON.stringify(next));
+              return next;
+          });
+      }
       
       // Feedback
       // In a real app we'd use a toast. For now, we can maybe use a small state or just reliance on visual change.
@@ -120,6 +153,63 @@ export default function SettingsModal({ isOpen, onClose }) {
       const resolved = applyColorMode(mode);
       setColorMode(resolved);
       applyTheme(currentTheme);
+  };
+
+  const handleDeleteWallpaper = (url) => {
+      const isCustom = customWallpapers.includes(url);
+      const isPreset = PRESET_WALLPAPERS.some((wp) => wp.url === url);
+
+      if (isCustom) {
+          setCustomWallpapers(prev => {
+              const next = prev.filter(u => u !== url);
+              localStorage.setItem('customWallpapers', JSON.stringify(next));
+              return next;
+          });
+      }
+
+      if (isPreset) {
+          setHiddenPresetWallpapers(prev => {
+              if (prev.includes(url)) return prev;
+              const next = [url, ...prev];
+              localStorage.setItem('hiddenPresetWallpapers', JSON.stringify(next));
+              return next;
+          });
+      }
+
+      if (bgImage === url) {
+          setBgImage('');
+          const root = document.documentElement;
+          root.style.setProperty('--bg-image', 'none');
+          localStorage.setItem('bgImage', '');
+      }
+
+      if (tempBgImage === url) {
+          setTempBgImage(bgImage === url ? '' : bgImage);
+      }
+
+      setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false });
+  };
+
+  const handleClearBackground = (sourceUrl = '') => {
+      const root = document.documentElement;
+      root.style.setProperty('--bg-image', 'none');
+      setBgImage('');
+      localStorage.setItem('bgImage', '');
+
+      if (tempBgImage === sourceUrl || tempBgImage) {
+          setTempBgImage('');
+      }
+
+      setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false });
+  };
+
+  const openWallpaperMenu = (e, url) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!url) return;
+      const isCustom = customWallpapers.includes(url);
+      const isPreset = PRESET_WALLPAPERS.some((wp) => wp.url === url);
+      setWallpaperMenu({ x: e.clientX, y: e.clientY, url, isCustom, isPreset });
   };
 
   const handleChangeRoot = async () => {
@@ -157,8 +247,16 @@ export default function SettingsModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden">
+    <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onMouseDown={() => setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false })}
+    >
+      <div
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden"
+        onMouseDown={(e) => e.stopPropagation()}
+        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+      >
         {/* Sidebar */}
         <div className="w-48 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 p-4 flex flex-col">
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4 px-2">设置</h2>
@@ -213,6 +311,35 @@ export default function SettingsModal({ isOpen, onClose }) {
             </button>
 
             <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
+                {wallpaperMenu.x !== null && wallpaperMenu.y !== null && (
+                    <div
+                        className="fixed z-[60] w-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left"
+                        style={{ left: wallpaperMenu.x, top: wallpaperMenu.y }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                    >
+                        <button
+                            className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-gray-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+                            onClick={() => handleClearBackground(wallpaperMenu.url)}
+                        >
+                            清除背景
+                        </button>
+                        {(wallpaperMenu.isCustom || wallpaperMenu.isPreset) && (
+                            <button
+                                className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                onClick={() => handleDeleteWallpaper(wallpaperMenu.url)}
+                            >
+                                删除壁纸
+                            </button>
+                        )}
+                        <button
+                            className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-gray-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+                            onClick={() => setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false })}
+                        >
+                            取消
+                        </button>
+                    </div>
+                )}
                 {activeTab === 'appearance' && (
                     <div className="space-y-8">
                         <div>
@@ -238,7 +365,10 @@ export default function SettingsModal({ isOpen, onClose }) {
                             <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">背景壁纸</h3>
                             
                             {/* Preview Area */}
-                            <div className="mb-4 relative h-40 w-full rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
+                            <div
+                                className="mb-4 relative h-40 w-full rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center"
+                                onContextMenu={(e) => openWallpaperMenu(e, tempBgImage)}
+                            >
                                 {tempBgImage ? (
                                     <img src={tempBgImage} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
@@ -278,10 +408,21 @@ export default function SettingsModal({ isOpen, onClose }) {
                                 >
                                     无背景
                                 </button>
-                                {PRESET_WALLPAPERS.map((wp, i) => (
+                                {customWallpapers.map((url, i) => (
+                                    <button
+                                        key={`custom-${i}`}
+                                        onClick={() => setTempBgImage(url)}
+                                        onContextMenu={(e) => openWallpaperMenu(e, url)}
+                                        className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all ${tempBgImage === url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
+                                        style={{ backgroundImage: `url("${url}")` }}
+                                        title="自定义壁纸（右键删除）"
+                                    />
+                                ))}
+                                {PRESET_WALLPAPERS.filter((wp) => !hiddenPresetWallpapers.includes(wp.url)).map((wp, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setTempBgImage(wp.url)}
+                                        onContextMenu={(e) => openWallpaperMenu(e, wp.url)}
                                         className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all ${tempBgImage === wp.url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
                                         style={{ backgroundImage: `url("${wp.url}")` }}
                                         title={wp.name}
