@@ -37,37 +37,38 @@ export default function WelcomeScreen({ onComplete }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-6 bg-surface-50 text-center">
-      <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center mb-6">
-        <Folder size={32} strokeWidth={2} />
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-surface-50 to-primary-50 text-center">
+      <div className="w-24 h-24 bg-white text-primary-600 rounded-3xl shadow-xl flex items-center justify-center mb-8 animate-fade-in">
+        <Folder size={48} strokeWidth={1.5} />
       </div>
       
-      <h1 className="text-2xl font-medium text-gray-900 mb-2">
+      <h1 className="text-4xl font-normal text-gray-900 mb-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
         Welcome to Local Resources
       </h1>
       
-      <p className="text-gray-500 mb-8 max-w-xs text-sm">
-        To get started, please enter the full path of the folder you want to manage.
+      <p className="text-gray-500 mb-10 max-w-md text-lg animate-fade-in" style={{animationDelay: '0.2s'}}>
+        Connect your local folder to start browsing in a beautiful, full-screen interface.
       </p>
 
-      <form onSubmit={handleSubmit} className="w-full max-w-xs space-y-4">
-        <div className="relative">
+      <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 animate-fade-in" style={{animationDelay: '0.3s'}}>
+        <div className="relative group">
             <input
               type="text"
               value={path}
               onChange={(e) => setPath(e.target.value)}
               placeholder="e.g., C:\Users\Name\Documents"
               className={`
-                w-full px-4 py-3 rounded-xl border bg-white text-gray-900 text-sm
-                focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
+                w-full px-6 py-4 rounded-2xl border bg-white text-gray-900 text-lg shadow-sm
+                focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500
                 transition-all duration-200
-                ${error ? 'border-red-300 focus:ring-red-200' : 'border-gray-200'}
+                ${error ? 'border-red-300 focus:ring-red-100' : 'border-gray-200 group-hover:border-gray-300'}
               `}
             />
         </div>
 
         {error && (
-            <div className="text-red-500 text-xs text-left pl-1">
+            <div className="text-red-500 text-sm text-left pl-2 font-medium flex items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
                 {error}
             </div>
         )}
@@ -75,9 +76,9 @@ export default function WelcomeScreen({ onComplete }) {
         <button
           type="submit"
           disabled={checking}
-          className="w-full py-3 px-4 bg-primary-600 hover:bg-primary-700 active:bg-primary-700 
-                   text-white font-medium rounded-full shadow-sm hover:shadow-md 
-                   transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full py-4 px-6 bg-primary-600 hover:bg-primary-700 active:bg-primary-800 
+                   text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5
+                   transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
         >
           {checking ? 'Verifying...' : 'Start Managing'}
         </button>
