@@ -262,13 +262,48 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
   return (
     <div
         className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in"
-        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+        onContextMenuCapture={(e) => {
+            // Allow context menu only on wallpapers
+            if (e.target.closest('[data-is-wallpaper="true"]')) return;
+            e.preventDefault();
+            e.stopPropagation();
+        }}
         onMouseDown={() => setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false })}
     >
+      {/* Context Menu - Moved outside of overflow-hidden container */}
+      {wallpaperMenu.x !== null && wallpaperMenu.y !== null && (
+          <div
+              className="fixed z-[60] w-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left"
+              style={{ left: wallpaperMenu.x, top: wallpaperMenu.y }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+          >
+              <button
+                  className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-gray-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+                  onClick={() => handleClearBackground(wallpaperMenu.url)}
+              >
+                  清除背景
+              </button>
+              {(wallpaperMenu.isCustom || wallpaperMenu.isPreset) && (
+                  <button
+                      className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      onClick={() => handleDeleteWallpaper(wallpaperMenu.url)}
+                  >
+                      删除壁纸
+                  </button>
+              )}
+              <button
+                  className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-gray-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
+                  onClick={() => setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false })}
+              >
+                  取消
+              </button>
+          </div>
+      )}
+
       <div
         className="glass-effect rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden border-0"
         onMouseDown={(e) => e.stopPropagation()}
-        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
         style={{
              backgroundColor: colorMode === 'night' ? 'rgba(15, 23, 42, 0.95)' : 'rgba(255, 255, 255, 0.95)'
         }}
@@ -335,35 +370,6 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
             </button>
 
             <div className="p-8 flex-1 overflow-y-auto custom-scrollbar">
-                {wallpaperMenu.x !== null && wallpaperMenu.y !== null && (
-                    <div
-                        className="fixed z-[60] w-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left"
-                        style={{ left: wallpaperMenu.x, top: wallpaperMenu.y }}
-                        onMouseDown={(e) => e.stopPropagation()}
-                        onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    >
-                        <button
-                            className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-gray-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
-                            onClick={() => handleClearBackground(wallpaperMenu.url)}
-                        >
-                            清除背景
-                        </button>
-                        {(wallpaperMenu.isCustom || wallpaperMenu.isPreset) && (
-                            <button
-                                className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                                onClick={() => handleDeleteWallpaper(wallpaperMenu.url)}
-                            >
-                                删除壁纸
-                            </button>
-                        )}
-                        <button
-                            className="w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors text-gray-700 dark:text-slate-200 hover:bg-black/5 dark:hover:bg-white/10"
-                            onClick={() => setWallpaperMenu({ x: null, y: null, url: '', isCustom: false, isPreset: false })}
-                        >
-                            取消
-                        </button>
-                    </div>
-                )}
                 {activeTab === 'appearance' && (
                     <div className="space-y-8">
                         <div>
@@ -450,9 +456,10 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                 {customWallpapers.map((url, i) => (
                                     <button
                                         key={`custom-${i}`}
+                                        data-wallpaper-url={url}
                                         onClick={() => setTempBgImage(url)}
                                         onContextMenu={(e) => openWallpaperMenu(e, url)}
-                                        className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all ${tempBgImage === url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
+                                        className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all cursor-context-menu ${tempBgImage === url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
                                         style={{ backgroundImage: `url("${url}")` }}
                                         title="自定义壁纸（右键删除）"
                                     />
@@ -460,11 +467,13 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                 {PRESET_WALLPAPERS.filter((wp) => !hiddenPresetWallpapers.includes(wp.url)).map((wp, i) => (
                                     <button
                                         key={i}
+                                        data-wallpaper-url={wp.url}
+                                        data-is-wallpaper="true"
                                         onClick={() => setTempBgImage(wp.url)}
                                         onContextMenu={(e) => openWallpaperMenu(e, wp.url)}
-                                        className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all ${tempBgImage === wp.url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
+                                        className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all cursor-context-menu ${tempBgImage === wp.url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
                                         style={{ backgroundImage: `url("${wp.url}")` }}
-                                        title={wp.name}
+                                        title={`${wp.name} (右键可删除)`}
                                     />
                                 ))}
                             </div>

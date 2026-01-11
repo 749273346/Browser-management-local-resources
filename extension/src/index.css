@@ -81,3 +81,8 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out forwards;
 }
+
+/* Utility for context menu cursor */
+.cursor-context-menu {
+  cursor: context-menu;
+}
