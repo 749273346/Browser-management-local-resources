@@ -51,6 +51,31 @@ export function useFileSystem() {
     }
   }, []);
 
+  // CRUD Operations
+  const createFolder = useCallback(async (path) => {
+      await fetch(`${API_BASE}/mkdir`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path })
+      });
+  }, []);
+
+  const renameItem = useCallback(async (oldPath, newPath) => {
+      await fetch(`${API_BASE}/rename`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ oldPath, newPath })
+      });
+  }, []);
+
+  const deleteItem = useCallback(async (path) => {
+      await fetch(`${API_BASE}/delete`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path })
+      });
+  }, []);
+
   return {
     files,
     currentPath,
@@ -58,6 +83,9 @@ export function useFileSystem() {
     error,
     fetchFiles,
     openInExplorer,
-    checkPath
+    checkPath,
+    createFolder,
+    renameItem,
+    deleteItem
   };
 }

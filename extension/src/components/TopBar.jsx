@@ -1,52 +1,43 @@
-import { ChevronRight, Home, Settings } from 'lucide-react';
+import { Home, Settings, Train, Palette } from 'lucide-react';
+import { applyTheme } from '../theme';
 
-export default function TopBar({ currentPath, onNavigate, onReset, depth }) {
-  // Simple path parsing logic (can be improved)
+export default function TopBar({ currentPath, onNavigate, onReset, depth, onOpenSettings }) {
   const parts = currentPath ? currentPath.split(/[\\/]/).filter(Boolean) : [];
   
-  // To avoid too long breadcrumbs, we might only show last 2-3 items
-  // But for now let's show all and rely on overflow scrolling
-  
+  const cycleTheme = () => {
+      const themes = ['high-speed', 'iron-spirit', 'history'];
+      const current = localStorage.getItem('appTheme') || 'high-speed';
+      const next = themes[(themes.indexOf(current) + 1) % themes.length];
+      applyTheme(next);
+  };
+
   return (
-    <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center shadow-sm sticky top-0 z-10 h-14">
+    <div className="bg-white/60 backdrop-blur-md border-b border-white/20 px-6 py-3 flex items-center shadow-sm sticky top-0 z-10 h-16 transition-colors duration-300">
       {/* Home Button / Reset */}
       <button 
         onClick={onReset}
-        className="p-2 -ml-2 text-gray-500 hover:bg-surface-100 hover:text-primary-600 rounded-full transition-colors"
-        title="Go to Root"
+        className="p-2 -ml-2 text-primary-600 hover:bg-white/50 rounded-full transition-colors group"
+        title="调度中心"
       >
-        <Home size={18} />
+        <Train size={24} strokeWidth={1.5} className="group-hover:scale-110 transition-transform" />
       </button>
 
       {/* Breadcrumbs */}
-      <div className="flex-1 flex items-center overflow-x-auto mx-2 scrollbar-hide text-sm mask-image-linear-to-r">
-        {parts.map((part, index) => {
-           // Reconstruct path for this part (naive implementation)
-           // NOTE: This assumes Windows paths mostly. A real robust solution would need 
-           // the full path map from history or robust path joining.
-           // For simplicity in this demo, we might just display text or use the history stack if available.
-           // Since we don't have the full path map easily here without passing complex props,
-           // we will display the current folder name prominently.
-           return null; 
-        })}
-        
-        {/* Simplified Breadcrumb: Just Root > ... > Current */}
-        <div className="flex items-center text-gray-600 whitespace-nowrap">
-            <span className="opacity-50 mx-1">/</span>
-            <span className="font-medium text-gray-900">{parts[parts.length - 1] || 'Root'}</span>
+      <div className="flex-1 flex items-center overflow-x-auto mx-4 scrollbar-hide text-sm mask-image-linear-to-r">
+        {/* Simplified Breadcrumb for now */}
+        <div className="flex items-center text-gray-800 whitespace-nowrap drop-shadow-sm">
+            <span className="font-medium text-lg text-primary-800">{parts[parts.length - 1] || '调度中心'}</span>
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center space-x-1">
-        <div className="px-2 py-1 bg-surface-100 rounded-md text-xs font-medium text-primary-600">
-            L{depth + 1}
-        </div>
+      <div className="flex items-center space-x-2">
         <button 
-            onClick={() => { if(confirm('Reset root path?')) { localStorage.removeItem('rootPath'); window.location.reload(); } }}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-surface-100 rounded-full transition-colors"
+            onClick={onOpenSettings}
+            className="p-2 text-gray-600 hover:text-primary-700 hover:bg-white/50 rounded-full transition-colors"
+            title="个性化设置"
         >
-            <Settings size={18} />
+            <Settings size={20} />
         </button>
       </div>
     </div>

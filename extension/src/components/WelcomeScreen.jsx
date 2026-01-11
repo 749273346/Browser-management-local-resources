@@ -43,11 +43,11 @@ export default function WelcomeScreen({ onComplete }) {
       </div>
       
       <h1 className="text-4xl font-normal text-gray-900 mb-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
-        Welcome to Local Resources
+        欢迎使用调度中心
       </h1>
       
       <p className="text-gray-500 mb-10 max-w-md text-lg animate-fade-in" style={{animationDelay: '0.2s'}}>
-        Connect your local folder to start browsing in a beautiful, full-screen interface.
+        连接本地文件夹，开启全新的全屏资源管理体验。
       </p>
 
       <form onSubmit={handleSubmit} className="w-full max-w-md space-y-6 animate-fade-in" style={{animationDelay: '0.3s'}}>
@@ -56,7 +56,7 @@ export default function WelcomeScreen({ onComplete }) {
               type="text"
               value={path}
               onChange={(e) => setPath(e.target.value)}
-              placeholder="e.g., C:\Users\Name\Documents"
+              placeholder="例如: C:\Users\Name\Documents"
               className={`
                 w-full px-6 py-4 rounded-2xl border bg-white text-gray-900 text-lg shadow-sm
                 focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500
@@ -80,7 +80,7 @@ export default function WelcomeScreen({ onComplete }) {
                    text-white text-lg font-medium rounded-full shadow-lg hover:shadow-xl hover:-translate-y-0.5
                    transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
         >
-          {checking ? 'Verifying...' : 'Start Managing'}
+          {checking ? '正在验证...' : '开始调度'}
         </button>
       </form>
     </div>

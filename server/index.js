@@ -82,6 +82,53 @@ app.post('/api/check-path', async (req, res) => {
     }
 });
 
+// CRUD APIs
+
+// Create Directory
+app.post('/api/mkdir', async (req, res) => {
+    const { path: targetPath } = req.body;
+    if (!targetPath) return res.status(400).json({ error: 'Path is required' });
+
+    try {
+        await fs.mkdir(targetPath);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Rename
+app.post('/api/rename', async (req, res) => {
+    const { oldPath, newPath } = req.body;
+    if (!oldPath || !newPath) return res.status(400).json({ error: 'Old and new paths are required' });
+
+    try {
+        await fs.rename(oldPath, newPath);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete
+app.post('/api/delete', async (req, res) => {
+    const { path: targetPath } = req.body;
+    if (!targetPath) return res.status(400).json({ error: 'Path is required' });
+
+    try {
+        const stats = await fs.stat(targetPath);
+        if (stats.isDirectory()) {
+            await fs.rm(targetPath, { recursive: true, force: true });
+        } else {
+            await fs.unlink(targetPath);
+        }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
