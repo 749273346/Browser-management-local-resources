@@ -2,33 +2,24 @@
 setlocal enabledelayedexpansion
 
 echo ===================================================
-echo    Local Resource Manager - Server Launcher
+echo    Local Resource Manager - Auto Setup
 echo ===================================================
 
 :: 1. Check for Node.js
+echo [CHECK] Checking system environment...
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [ERROR] Node.js is not installed on this computer.
-    echo.
-    echo Node.js is required to run the local server.
-    echo.
-    set /p "CHOICE=Do you want to install Node.js automatically? (Y/N): "
-    
-    if /i "!CHOICE!"=="Y" (
-        goto :InstallNode
-    ) else (
-        echo.
-        echo Please install Node.js manually from: https://nodejs.org/
-        echo After installation, run this script again.
-        pause
-        exit /b
-    )
+    echo [INFO] Node.js environment not found.
+    echo [INFO] Starting automatic installation...
+    goto :InstallNode
+) else (
+    echo [INFO] Node.js is ready.
 )
 
 :CheckDependencies
 :: 2. Check and Install Dependencies
 if not exist "%~dp0server\node_modules" (
-    echo [INFO] First run detected. Installing server dependencies...
+    echo [INFO] Installing server dependencies (First run only)...
     cd /d "%~dp0server"
     call npm install
     if !errorlevel! neq 0 (
@@ -37,90 +28,93 @@ if not exist "%~dp0server\node_modules" (
         exit /b
     )
     cd /d "%~dp0"
-    echo [INFO] Dependencies installed successfully.
+    echo [INFO] Dependencies ready.
 )
 
-:: 3. Start Server
-echo [INFO] Starting server in background...
+:: 3. Setup Auto-Start (Startup Folder Shortcut)
+echo [INFO] Configuring auto-start on boot...
+set "SHORTCUT_PATH=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\LocalResourceManager.lnk"
+set "TARGET_PATH=%~dp0start-server-hidden.vbs"
+set "WORK_DIR=%~dp0"
+
+:: Use PowerShell to create the shortcut
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT_PATH%'); $s.TargetPath = '%TARGET_PATH%'; $s.WorkingDirectory = '%WORK_DIR%'; $s.Description = 'Local Resource Manager Background Service'; $s.Save()"
+
+if exist "%SHORTCUT_PATH%" (
+    echo [SUCCESS] Auto-start configured successfully.
+) else (
+    echo [WARN] Could not create auto-start shortcut. You may need to run this script manually after reboot.
+)
+
+:: 4. Start Server Now
+echo [INFO] Starting background service...
 cscript //nologo "%~dp0start-server-hidden.vbs"
 
 echo.
-echo [SUCCESS] Server is running!
+echo ===================================================
+echo    All Systems Go!
 echo ===================================================
 echo.
-echo Now you can use the Chrome Extension:
-echo 1. Open Chrome
-echo 2. Go to Extensions (chrome://extensions)
-echo 3. Ensure 'Developer mode' is ON
-echo 4. Click 'Load unpacked'
-echo 5. Select this folder:
-echo    %~dp0extension\dist
+echo 1. The service is running in the background.
+echo 2. It will start automatically when you restart the computer.
+echo 3. You can close this window now.
 echo.
-echo Note: The server will keep running even if you close this window.
-echo To stop it, use Task Manager to end 'Node.js' process.
+echo [Action Required] Load the extension in your browser:
+echo    path: %~dp0extension
 echo.
 pause
 exit /b
 
 :InstallNode
 echo.
-
-:: Check for local installer first
+:: Check for local installer first (Offline Mode)
 set "localInstaller=%~dp0resources\node-v18-x64.msi"
 if exist "!localInstaller!" (
-    echo [INFO] Found local offline installer.
+    echo [INFO] Found offline installer. Installing...
     set "nodeFile=!localInstaller!"
     goto :RunInstaller
 )
 
-echo [INFO] Local installer not found. Attempting download...
+:: Online Mode
+echo [INFO] Offline installer not found. Checking network...
 echo [INFO] Detecting system architecture...
 if "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
     set "nodeUrl=https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi"
     set "nodeFile=node-install.msi"
-    echo [INFO] 64-bit system detected.
 ) else (
     set "nodeUrl=https://nodejs.org/dist/v18.17.1/node-v18.17.1-x86.msi"
     set "nodeFile=node-install.msi"
-    echo [INFO] 32-bit system detected.
 )
 
-echo [INFO] Downloading Node.js (approx 30MB)...
-echo This may take a minute depending on your internet connection.
+echo [INFO] Downloading Node.js...
 powershell -Command "try { Invoke-WebRequest -Uri '%nodeUrl%' -OutFile '%nodeFile%' -ErrorAction Stop } catch { exit 1 }"
 
 if %errorlevel% neq 0 (
-    echo [ERROR] Download failed. Please check your internet connection.
-    echo You can download manually at: %nodeUrl%
-    del "%nodeFile%" >nul 2>&1
+    echo [ERROR] Download failed. No internet and no offline installer.
+    echo Please put 'node-v18-x64.msi' in 'resources' folder or connect to internet.
     pause
     exit /b
 )
 
 :RunInstaller
-echo [INFO] Installing Node.js...
-echo Please follow the installation prompts (click Next/Install).
-echo IMPORTANT: When finished, you may need to RESTART this script.
-msiexec /i "%nodeFile%" /qb
+echo [INFO] Installing Node.js (Please wait)...
+:: /qb means basic UI (progress bar), /norestart suppresses reboot prompt
+msiexec /i "%nodeFile%" /qb /norestart
 
 echo.
 if not "%nodeFile%"=="!localInstaller!" (
-    echo [INFO] Cleaning up downloaded installer...
     del "%nodeFile%" >nul 2>&1
 )
 
-echo.
-echo [CHECK] Verifying installation...
-:: Refresh environment variables for the current session
-call RefreshEnv.cmd >nul 2>&1
-:: Basic check
+echo [INFO] Verifying installation...
+:: Attempt to refresh environment by restarting the script if Node is still not found
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [WARN] Node.js command not found yet.
-    echo Please CLOSE this window and run start-background.bat again to reload settings.
-    pause
+    echo [INFO] Environment update pending. Restarting setup script...
+    timeout /t 2 >nul
+    start "" "%~f0"
     exit /b
 ) else (
-    echo [SUCCESS] Node.js installed successfully!
+    echo [SUCCESS] Node.js installed. Proceeding...
     goto :CheckDependencies
 )
