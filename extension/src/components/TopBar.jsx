@@ -1,4 +1,5 @@
 import { Settings, Train, ChevronRight, LayoutGrid, List, Eye, EyeOff, Kanban } from 'lucide-react';
+import Button from './Button';
 
 export default function TopBar({ currentPath, onNavigate, onReset, onOpenSettings, viewMode, onToggleView, showHidden, onToggleHidden }) {
   // Normalize path to use forward slashes for easier splitting, but keep track of original separator if possible
@@ -65,12 +66,13 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
                             onClick={() => !isLast && handleBreadcrumbClick(index)}
                             disabled={isLast}
                             className={`
-                                px-2 py-1 rounded-md transition-colors font-medium
+                                px-2 py-1 transition-colors font-medium
                                 ${isLast 
                                     ? 'text-primary-800 dark:text-primary-200 font-bold cursor-default' 
                                     : 'text-gray-600 dark:text-slate-300 hover:bg-black/5 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-slate-100 cursor-pointer'
                                 }
                             `}
+                            style={{ borderRadius: 'var(--radius-btn)' }}
                         >
                             {part}
                         </button>
@@ -88,29 +90,32 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
 
       {/* Actions */}
       <div className="flex items-center space-x-2">
-        <button
+        <Button
             onClick={onToggleHidden}
-            className={`p-2 rounded-full transition-colors ${showHidden ? 'text-primary-600 dark:text-primary-200 bg-primary-50 dark:bg-primary-500/15' : 'text-gray-400 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-200 hover:bg-white/50 dark:hover:bg-slate-800/60'}`}
+            variant={showHidden ? 'active' : 'secondary'}
+            size="icon"
             title={showHidden ? '隐藏停运物资' : '显示停运物资'}
         >
             {showHidden ? <Eye size={20} /> : <EyeOff size={20} />}
-        </button>
+        </Button>
 
-        <button
+        <Button
             onClick={() => onToggleView(getNextViewMode())}
-            className="p-2 text-gray-600 dark:text-slate-300 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-white/50 dark:hover:bg-slate-800/60 rounded-full transition-colors"
+            variant="secondary"
+            size="icon"
             title={getViewTitle()}
         >
             {getViewIcon()}
-        </button>
+        </Button>
 
-        <button 
+        <Button 
             onClick={onOpenSettings}
-            className="p-2 text-gray-600 dark:text-slate-300 hover:text-primary-700 dark:hover:text-primary-200 hover:bg-white/50 dark:hover:bg-slate-800/60 rounded-full transition-colors"
+            variant="secondary"
+            size="icon"
             title="个性化设置"
         >
             <Settings size={20} />
-        </button>
+        </Button>
       </div>
     </div>
   );

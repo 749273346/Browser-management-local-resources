@@ -45,10 +45,15 @@ export default function FileList({ files, onNavigate, onContextMenu, depth, isHi
                   e.stopPropagation();
                   if (onContextMenu) onContextMenu(e, file);
               }}
-              className={`group flex items-center p-3 rounded-xl cursor-pointer transition-colors border hover:border-white/40 dark:hover:border-white/10
+              className={`group flex items-center p-3 cursor-pointer transition-colors border hover:border-white/40 dark:hover:border-white/10
                 ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 dark:border-slate-700 hover:bg-white/30 dark:hover:bg-slate-800/40' : 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'}
                 ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
               `}
+              style={{
+                borderRadius: 'var(--radius-input)',
+                borderWidth: 'var(--border-width)',
+                borderColor: hidden ? undefined : `rgba(var(--border-color-rgb), var(--border-opacity))`
+              }}
               >
               <div className="mr-4 text-gray-400 dark:text-slate-400 group-hover:text-gray-600 dark:group-hover:text-slate-200 transition-transform group-hover:scale-110 relative">
                   {getFileIcon(file.name, file.isDirectory)}

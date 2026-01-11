@@ -26,7 +26,10 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
         <div className="flex flex-col h-full p-6 space-y-6">
             {/* Header / Loose Files Area */}
             {looseFiles.length > 0 && (
-                <div className="glass-effect rounded-2xl p-4">
+                <div 
+                    className="glass-effect p-4"
+                    style={{ borderRadius: 'var(--radius-card)' }}
+                >
                     <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-2">
                         文件 ({looseFiles.length})
                     </h3>
@@ -81,20 +84,24 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                             <div 
                                 key={index}
                                 className={`
-                                    w-80 flex flex-col rounded-2xl border shadow-sm backdrop-blur-md transition-all h-full max-h-full
+                                    w-80 flex flex-col transition-all h-full max-h-full border shadow-sm backdrop-blur-md
                                     ${color.bg} ${color.border}
                                     ${hidden ? 'opacity-60 grayscale' : ''}
                                 `}
                                 style={{
+                                    borderRadius: 'var(--radius-card)',
                                     backdropFilter: 'blur(var(--glass-blur))',
-                                    // We mix the column color with a bit of glass opacity logic if needed, 
-                                    // but these columns use specific colors (yellow, green etc).
-                                    // Let's keep their specific colors but ensure blur works.
+                                    borderWidth: 'var(--border-width)',
+                                    borderColor: `rgba(var(--border-color-rgb), var(--border-opacity))`
                                 }}
                             >
                                 {/* Column Header */}
                                 <div 
-                                    className={`p-4 rounded-t-2xl border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group`}
+                                    className={`p-4 border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group`}
+                                    style={{ 
+                                        borderTopLeftRadius: 'var(--radius-card)', 
+                                        borderTopRightRadius: 'var(--radius-card)' 
+                                    }}
                                     onClick={() => onNavigate(folder)}
                                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, folder); }}
                                 >
@@ -147,7 +154,13 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                 </div>
                                 
                                 {/* Column Footer (Action?) */}
-                                <div className={`p-2 rounded-b-2xl border-t ${color.border} bg-white/10 text-center`}>
+                                <div 
+                                    className={`p-2 border-t ${color.border} bg-white/10 text-center`}
+                                    style={{ 
+                                        borderBottomLeftRadius: 'var(--radius-card)', 
+                                        borderBottomRightRadius: 'var(--radius-card)' 
+                                    }}
+                                >
                                     <span className={`text-xs font-medium ${color.text} opacity-60`}>
                                         {children.length} 项
                                     </span>

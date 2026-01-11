@@ -1,61 +1,61 @@
-// Material Design 3 Color Palette Generator
-// In a real app we might use @material/material-color-utilities
-// For now, we define our Railway Themes manually
 
 export const themes = {
-  'high-speed': {
-    name: '高铁时代',
+  'glass-morphism': {
+    name: '毛玻璃 (Glass)',
+    type: 'glass',
+    properties: {
+      '--radius-card': '16px',
+      '--radius-btn': '8px',
+      '--radius-input': '8px',
+      '--spacing-unit': '1.5rem',
+      '--glass-opacity': '0.8',
+      '--glass-blur': '12px',
+      '--border-width': '1px',
+      '--border-opacity': '0.4',
+      '--shadow-strength': '0.1'
+    },
     colors: {
-      primary: '#E60012', // CR Red (Fuxing)
-      onPrimary: '#FFFFFF',
-      primaryContainer: '#FFDAD6',
-      onPrimaryContainer: '#410002',
-      secondary: '#765652',
-      onSecondary: '#FFFFFF',
-      secondaryContainer: '#FFDDAE', // Warm Gold accent
-      surface: '#F8FDFF', // Very light cool grey
-      surfaceVariant: '#F2F2F2',
+      primary: '#0066CC',
       background: '#FFFFFF',
-      outline: '#857371',
-    },
-    bgGradient: 'linear-gradient(135deg, #F8FDFF 0%, #F0F7FF 100%)',
-    logoColor: '#E60012'
+    }
   },
-  'iron-spirit': {
-    name: '铁轨坚守',
-    colors: {
-      primary: '#003366', // Railway Blue
-      onPrimary: '#FFFFFF',
-      primaryContainer: '#D7E2FF',
-      onPrimaryContainer: '#001A41',
-      secondary: '#565E71',
-      onSecondary: '#FFFFFF',
-      secondaryContainer: '#DAE2F9',
-      surface: '#FDFBFF',
-      surfaceVariant: '#E0E2EC',
-      background: '#FDFBFF',
-      outline: '#74777F',
+  'modern-minimal': {
+    name: '现代极简 (Modern)',
+    type: 'flat',
+    properties: {
+      '--radius-card': '4px',
+      '--radius-btn': '4px',
+      '--radius-input': '4px',
+      '--spacing-unit': '1rem',
+      '--glass-opacity': '0.95',
+      '--glass-blur': '0px',
+      '--border-width': '0px',
+      '--border-opacity': '0',
+      '--shadow-strength': '0.05'
     },
-    bgGradient: 'linear-gradient(135deg, #FDFBFF 0%, #EDF2FA 100%)',
-    logoColor: '#003366'
+    colors: {
+      primary: '#111827',
+      background: '#F3F4F6',
+    }
   },
-  'history': {
-    name: '历史长河',
-    colors: {
-      primary: '#7C5800', // Bronze/Brass
-      onPrimary: '#FFFFFF',
-      primaryContainer: '#FFDEA5',
-      onPrimaryContainer: '#271900',
-      secondary: '#6D5C3F',
-      onSecondary: '#FFFFFF',
-      secondaryContainer: '#F7DFBB',
-      surface: '#FFF8F1', // Paper-like
-      surfaceVariant: '#EFE0CF',
-      background: '#FFF8F1',
-      outline: '#817567',
+  'classic-system': {
+    name: '经典系统 (Classic)',
+    type: 'classic',
+    properties: {
+      '--radius-card': '6px',
+      '--radius-btn': '4px',
+      '--radius-input': '2px',
+      '--spacing-unit': '0.75rem',
+      '--glass-opacity': '1',
+      '--glass-blur': '0px',
+      '--border-width': '1px',
+      '--border-opacity': '1',
+      '--shadow-strength': '0.2'
     },
-    bgGradient: 'linear-gradient(135deg, #FFF8F1 0%, #F5EBD0 100%)', // Old paper feel
-    logoColor: '#7C5800'
+    colors: {
+      primary: '#00509E',
+      background: '#E0E0E0',
+    }
   }
 };
 
@@ -67,25 +67,16 @@ export const applyColorMode = (mode) => {
   return resolved;
 };
 
-export const applyTheme = (themeName) => {
-  const theme = themes[themeName] || themes['high-speed'];
+export const applyTheme = (themeId) => {
+  const theme = themes[themeId] || themes['glass-morphism'];
   const root = document.documentElement;
-  // Don't re-apply color mode here, just read it
-  const colorMode = localStorage.getItem('colorMode') || 'day';
   
-  Object.entries(theme.colors).forEach(([key, value]) => {
-    root.style.setProperty(`--color-${key}`, value);
+  // Apply CSS Variables
+  Object.entries(theme.properties).forEach(([key, value]) => {
+    root.style.setProperty(key, value);
   });
   
-  root.style.setProperty('--bg-gradient', theme.bgGradient);
-
-  // Apply dark mode overrides if needed, but rely mostly on CSS variables and Tailwind classes
-  if (colorMode === 'night') {
-    // Only override specific semantic colors if they differ from the palette
-    // But mostly we trust the .dark class and Tailwind
-  }
-  
   // Save preference
-  localStorage.setItem('appTheme', themeName);
+  localStorage.setItem('appTheme', themeId);
   return theme;
 };

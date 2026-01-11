@@ -43,12 +43,19 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, r
                     if (onContextMenu) onContextMenu(e, file);
                 }}
                 className={`
-                    group flex flex-col items-center p-4 rounded-2xl shadow-sm glass-effect
+                    group flex flex-col items-center shadow-sm glass-effect
                     hover:shadow-xl hover:border-primary-200 dark:hover:border-primary-500/40 cursor-pointer transition-all duration-300 ease-out
                     ${!isRenaming && 'hover:-translate-y-1'}
                     ${hidden ? 'opacity-40 grayscale border-dashed' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}
                     ${isRenaming ? 'ring-2 ring-primary-500 bg-white dark:bg-slate-800 !opacity-100' : ''}
                 `}
+                style={{
+                    borderRadius: 'var(--radius-card)',
+                    padding: 'var(--spacing-unit)',
+                    backdropFilter: 'blur(var(--glass-blur))',
+                    borderWidth: 'var(--border-width)',
+                    borderColor: `rgba(var(--border-color-rgb), var(--border-opacity))`
+                }}
                 >
                 <div className="mb-4 transition-transform group-hover:scale-110 duration-300 relative">
                     {getFileIcon(file.name, file.isDirectory)}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder, Sun, Moon } from 'lucide-react';
 import { themes, applyTheme, applyColorMode } from '../theme';
+import Button from './Button';
 
 const normalizeBgValue = (value) => {
   if (!value || value === 'none') return '';
@@ -49,7 +50,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
   const [tempBgImage, setTempBgImage] = useState(''); // For preview before saving
   const [glassOpacity, setGlassOpacity] = useState(localStorage.getItem('glassOpacity') || 0.8);
   const [glassBlur, setGlassBlur] = useState(localStorage.getItem('glassBlur') || 12);
-  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'high-speed');
+  const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'glass-morphism');
   const [colorMode, setColorMode] = useState(localStorage.getItem('colorMode') || 'day');
   const [customWallpapers, setCustomWallpapers] = useState(() => {
       try {
@@ -270,51 +271,59 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
             <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4 px-2">设置</h2>
             
             <div className="flex flex-col space-y-2">
-                <button 
+                <Button 
+                    variant="ghost" 
+                    active={activeTab === 'appearance'}
                     onClick={() => setActiveTab('appearance')}
-                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                    className="w-full justify-start"
+                    icon={ImageIcon}
                 >
-                    <ImageIcon size={18} />
-                    <span>外观设置</span>
-                </button>
-                <button 
+                    外观设置
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    active={activeTab === 'directory'}
                     onClick={() => setActiveTab('directory')}
-                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'directory' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                    className="w-full justify-start"
+                    icon={Folder}
                 >
-                    <Folder size={18} />
-                    <span>目录管理</span>
-                </button>
-                <button 
+                    目录管理
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    active={activeTab === 'tweaks'}
                     onClick={() => setActiveTab('tweaks')}
-                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'tweaks' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                    className="w-full justify-start"
+                    icon={Sliders}
                 >
-                    <Sliders size={18} />
-                    <span>视觉微调</span>
-                </button>
-                <button 
+                    视觉微调
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    active={activeTab === 'about'}
                     onClick={() => setActiveTab('about')}
-                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'about' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                    className="w-full justify-start"
+                    icon={Info}
                 >
-                    <Info size={18} />
-                    <span>关于</span>
-                </button>
+                    关于
+                </Button>
             </div>
 
             <div className="mt-auto pt-3">
-                <button
+                <Button
                     onClick={() => handleModeChange(colorMode === 'night' ? 'day' : 'night')}
-                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-colors"
+                    variant="secondary"
+                    size="icon"
                     title={colorMode === 'night' ? '切换到白天模式' : '切换到黑夜模式'}
-                    aria-label={colorMode === 'night' ? '切换到白天模式' : '切换到黑夜模式'}
                 >
                     {colorMode === 'night' ? <Sun size={18} /> : <Moon size={18} />}
-                </button>
+                </Button>
             </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 flex flex-col relative">
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200">
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200 transition-colors z-10">
                 <X size={24} />
             </button>
 
@@ -351,18 +360,29 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                 {activeTab === 'appearance' && (
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">主题色</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">界面风格</h3>
                             <div className="grid grid-cols-3 gap-3">
                                 {Object.entries(themes).map(([key, theme]) => (
                                     <button
                                         key={key}
                                         onClick={() => handleThemeChange(key)}
                                         className={`
-                                            p-3 rounded-xl border-2 text-left transition-all
+                                            p-3 rounded-xl border-2 text-left transition-all relative overflow-hidden group
                                             ${currentTheme === key ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/15' : 'border-transparent bg-gray-50 hover:bg-gray-100 dark:bg-slate-800/60 dark:hover:bg-slate-800'}
                                         `}
                                     >
-                                        <div className="w-6 h-6 rounded-full mb-2" style={{ backgroundColor: theme.colors.primary }}></div>
+                                        <div className="mb-2 h-12 w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden relative shadow-sm">
+                                            {/* Mini Preview of Theme Style */}
+                                            {theme.type === 'glass' && (
+                                                <div className="absolute inset-2 rounded bg-primary-100/50 backdrop-blur-sm border border-white/40"></div>
+                                            )}
+                                            {theme.type === 'flat' && (
+                                                <div className="absolute inset-2 rounded-sm bg-gray-100 dark:bg-slate-800"></div>
+                                            )}
+                                            {theme.type === 'classic' && (
+                                                <div className="absolute inset-2 rounded bg-gradient-to-b from-white to-gray-50 border border-gray-300"></div>
+                                            )}
+                                        </div>
                                         <div className="text-xs font-medium text-gray-700 dark:text-slate-200">{theme.name}</div>
                                     </button>
                                 ))}
@@ -391,18 +411,22 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                     
                                     {tempBgImage !== bgImage && (
                                         <>
-                                            <button 
+                                            <Button 
+                                                variant="secondary"
+                                                size="sm"
                                                 onClick={() => setTempBgImage(bgImage)}
-                                                className="px-3 py-1.5 bg-white/90 dark:bg-slate-900/80 text-gray-700 dark:text-slate-200 shadow-sm rounded-lg text-xs font-medium hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center"
                                             >
                                                 取消
-                                            </button>
-                                            <button 
+                                            </Button>
+                                            <Button 
+                                                variant="primary"
+                                                size="sm"
                                                 onClick={handleSaveBackground}
-                                                className="px-3 py-1.5 bg-primary-600 text-white shadow-sm rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors flex items-center animate-pulse"
+                                                className="animate-pulse"
+                                                icon={Save}
                                             >
-                                                <Save size={14} className="mr-1"/> 确认更换
-                                            </button>
+                                                确认更换
+                                            </Button>
                                         </>
                                     )}
                                 </div>
@@ -449,13 +473,15 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                 <div className="text-sm font-mono text-gray-600 dark:text-slate-300 break-all bg-white dark:bg-slate-900 p-2 rounded border border-gray-100 dark:border-slate-700">
                                     {currentRoot || '未设置'}
                                 </div>
-                                <button 
+                                <Button 
+                                    variant="primary"
+                                    size="sm"
                                     onClick={handleChangeRoot}
-                                    className="self-end px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+                                    className="self-end"
+                                    icon={Folder}
                                 >
-                                    <Folder size={16} className="mr-2" />
                                     更改目录
-                                </button>
+                                </Button>
                             </div>
                         </div>
 
@@ -467,12 +493,14 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                         <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-primary-200 dark:hover:border-primary-500/40 transition-colors group">
                                             <span className="text-xs text-gray-600 dark:text-slate-300 font-mono truncate flex-1 mr-4" title={path}>{path}</span>
                                             {path !== currentRoot && (
-                                                <button 
+                                                <Button 
+                                                    variant="active"
+                                                    size="sm"
                                                     onClick={() => handleHistoryClick(path)}
-                                                    className="px-3 py-1 text-xs font-medium text-primary-600 dark:text-primary-200 bg-primary-50 dark:bg-primary-500/15 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="opacity-0 group-hover:opacity-100"
                                                 >
                                                     切换
-                                                </button>
+                                                </Button>
                                             )}
                                             {path === currentRoot && (
                                                 <span className="px-2 py-1 text-xs font-medium text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-950/40 rounded-md">
