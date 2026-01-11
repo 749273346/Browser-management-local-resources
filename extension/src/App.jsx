@@ -72,6 +72,15 @@ function App() {
       }
   });
 
+  // Folder Colors State
+  const [folderColors, setFolderColors] = useState(() => {
+      try {
+          return JSON.parse(localStorage.getItem('folderColors') || '{}');
+      } catch {
+          return {};
+      }
+  });
+
   // Get view mode for current path (default to 'dashboard')
   // We should use 'path' state which is the source of truth for navigation in App.jsx
   const currentViewMode = folderViewModes[path] || 'dashboard';
@@ -122,7 +131,13 @@ function App() {
       if (glassBlur) root.style.setProperty('--glass-blur', `${glassBlur}px`);
   }, []);
   
-  const isRoot = path === localStorage.getItem('rootPath');
+  // Helper to normalize paths for comparison
+  const normalizePath = (p) => {
+      if (!p) return '';
+      return p.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
+  };
+
+  const isRoot = normalizePath(path) === normalizePath(localStorage.getItem('rootPath'));
   const depth = isRoot ? 0 : 1;
 
   // Initial Load
@@ -217,9 +232,16 @@ function App() {
       });
   };
 
-  const handleMenuAction = async (action, file) => {
+  const handleMenuAction = async (action, file, extraData) => {
       try {
-          if (action === 'open') {
+          if (action === 'set-color') {
+              setFolderColors(prev => {
+                  const next = { ...prev, [file.path]: extraData };
+                  localStorage.setItem('folderColors', JSON.stringify(next));
+                  return next;
+              });
+              showToast('颜色设置成功');
+          } else if (action === 'open') {
               handleNavigate(file);
           } else if (action === 'rename') {
               setRenamingName(file.name);
@@ -337,6 +359,7 @@ function App() {
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
+                    folderColors={folderColors}
                 />
             ) : currentViewMode === 'grid' ? (
                 <FileGrid 
@@ -381,6 +404,7 @@ function App() {
         fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null })}
+        isLevel1={isRoot}
       />
 
       <ConfirmDialog

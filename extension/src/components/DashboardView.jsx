@@ -1,13 +1,5 @@
 import { Folder, File, FileImage, FileText, FileCode, ChevronRight, EyeOff } from 'lucide-react';
-
-// Color palette for columns (Railway theme inspired)
-const COLUMN_COLORS = [
-    { bg: 'bg-yellow-50 dark:bg-yellow-900/20', border: 'border-yellow-200 dark:border-yellow-800', header: 'bg-yellow-100 dark:bg-yellow-900/40', text: 'text-yellow-800 dark:text-yellow-200' },
-    { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-200 dark:border-green-800', header: 'bg-green-100 dark:bg-green-900/40', text: 'text-green-800 dark:text-green-200' },
-    { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-200 dark:border-red-800', header: 'bg-red-100 dark:bg-red-900/40', text: 'text-red-800 dark:text-red-200' },
-    { bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800', header: 'bg-blue-100 dark:bg-blue-900/40', text: 'text-blue-800 dark:text-blue-200' },
-    { bg: 'bg-purple-50 dark:bg-purple-900/20', border: 'border-purple-200 dark:border-purple-800', header: 'bg-purple-100 dark:bg-purple-900/40', text: 'text-purple-800 dark:text-purple-200' },
-];
+import { COLUMN_COLORS, getThemeColor } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory) => {
     if (isDirectory) return <Folder className="text-primary-500 fill-primary-50" size={20} />;
@@ -25,7 +17,7 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function DashboardView({ files, onNavigate, onContextMenu, isHidden }) {
+export default function DashboardView({ files, onNavigate, onContextMenu, isHidden, folderColors = {} }) {
     // Separate folders (Columns) and loose files
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
@@ -64,7 +56,24 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
             <div className="flex-1 overflow-x-auto pb-4">
                 <div className="flex space-x-6 min-w-max h-full">
                     {folders.map((folder, index) => {
-                        const color = COLUMN_COLORS[index % COLUMN_COLORS.length];
+                        let color = COLUMN_COLORS[index % COLUMN_COLORS.length];
+                        
+                        // Check custom color or inheritance
+                        if (folderColors[folder.path]) {
+                            const custom = getThemeColor(folderColors[folder.path]);
+                            if (custom) color = custom;
+                        } else {
+                            // Inheritance check
+                            const parentPath = Object.keys(folderColors).find(path => 
+                                folder.path.startsWith(path) && 
+                                (folder.path[path.length] === '/' || folder.path[path.length] === '\\')
+                            );
+                            if (parentPath) {
+                                const custom = getThemeColor(folderColors[parentPath]);
+                                if (custom) color = custom;
+                            }
+                        }
+
                         const hidden = isHidden ? isHidden(folder.path) : false;
                         const children = folder.children || [];
 
