@@ -60,6 +60,18 @@ export function useFileSystem() {
       });
   }, []);
 
+  const createFile = useCallback(async (path) => {
+      const res = await fetch(`${API_BASE}/mkfile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path })
+      });
+      if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to create file');
+      }
+  }, []);
+
   const renameItem = useCallback(async (oldPath, newPath) => {
       await fetch(`${API_BASE}/rename`, {
           method: 'POST',
@@ -85,6 +97,7 @@ export function useFileSystem() {
     openInExplorer,
     checkPath,
     createFolder,
+    createFile,
     renameItem,
     deleteItem
   };

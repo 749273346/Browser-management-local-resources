@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, Sliders, Info, Upload, Trash2, Check, Save } from 'lucide-react';
+import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder } from 'lucide-react';
 import { themes, applyTheme } from '../theme';
 
 // CR-Guangzhou Wallpapers (Hosted or Base64 placeholders)
@@ -18,11 +18,18 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [glassOpacity, setGlassOpacity] = useState(localStorage.getItem('glassOpacity') || 0.8);
   const [glassBlur, setGlassBlur] = useState(localStorage.getItem('glassBlur') || 12);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'high-speed');
+  
+  // Directory State
+  const [currentRoot, setCurrentRoot] = useState(localStorage.getItem('rootPath') || '');
+  const [history, setHistory] = useState([]);
 
   // Initialize temp state when modal opens
   useEffect(() => {
       if (isOpen) {
           setTempBgImage(localStorage.getItem('bgImage') || '');
+          setCurrentRoot(localStorage.getItem('rootPath') || '');
+          const savedHistory = JSON.parse(localStorage.getItem('pathHistory') || '[]');
+          setHistory(savedHistory);
       }
   }, [isOpen]);
 
@@ -50,18 +57,60 @@ export default function SettingsModal({ isOpen, onClose }) {
   const handleSaveBackground = () => {
       setBgImage(tempBgImage);
       const root = document.documentElement;
-      if (tempBgImage) {
+      
+      // Ensure we handle "none" properly for clearing background
+      if (tempBgImage && tempBgImage !== 'none') {
           root.style.setProperty('--bg-image', `url("${tempBgImage}")`);
       } else {
           root.style.setProperty('--bg-image', 'none');
+          setTempBgImage(''); // Reset temp state to empty string for UI consistency
       }
-      localStorage.setItem('bgImage', tempBgImage);
-      alert('背景已应用 (Background Applied)');
+      
+      // Save empty string to localStorage if "none" or empty
+      localStorage.setItem('bgImage', tempBgImage === 'none' ? '' : tempBgImage);
+      
+      // Feedback
+      // In a real app we'd use a toast. For now, we can maybe use a small state or just reliance on visual change.
+      // But user requested feedback.
+      // Let's rely on the global UI feedback todo for a toast system later, or add a simple one here.
+      alert('背景已成功应用！');
   };
 
   const handleThemeChange = (themeKey) => {
       applyTheme(themeKey);
       setCurrentTheme(themeKey);
+  };
+
+  const handleChangeRoot = async () => {
+      try {
+          const res = await fetch('http://localhost:3001/api/pick-folder', { method: 'POST' });
+          const data = await res.json();
+          if (data.path) {
+              const newPath = data.path;
+              // Update history
+              const newHistory = [newPath, ...history.filter(p => p !== newPath)].slice(0, 3);
+              setHistory(newHistory);
+              localStorage.setItem('pathHistory', JSON.stringify(newHistory));
+              
+              // Set new root
+              localStorage.setItem('rootPath', newPath);
+              setCurrentRoot(newPath);
+              
+              if (confirm('目录已更改，需要刷新页面以生效。是否立即刷新？')) {
+                  window.location.href = 'index.html';
+              }
+          }
+      } catch (err) {
+          alert('无法打开文件夹选择器');
+      }
+  };
+
+  const handleHistoryClick = (path) => {
+      if (path === currentRoot) return;
+      if (confirm(`切换到历史目录: ${path}?`)) {
+          localStorage.setItem('rootPath', path);
+          window.location.href = 'index.html';
+      }
   };
 
   if (!isOpen) return null;
@@ -79,6 +128,13 @@ export default function SettingsModal({ isOpen, onClose }) {
             >
                 <ImageIcon size={18} />
                 <span>外观设置</span>
+            </button>
+            <button 
+                onClick={() => setActiveTab('directory')}
+                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'directory' ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
+            >
+                <Folder size={18} />
+                <span>目录管理</span>
             </button>
             <button 
                 onClick={() => setActiveTab('tweaks')}
@@ -140,13 +196,22 @@ export default function SettingsModal({ isOpen, onClose }) {
                                         <Upload size={14} className="mr-1"/> 选择图片
                                         <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
                                     </label>
+                                    
                                     {tempBgImage !== bgImage && (
-                                        <button 
-                                            onClick={handleSaveBackground}
-                                            className="px-3 py-1.5 bg-primary-600 text-white shadow-sm rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors flex items-center animate-pulse"
-                                        >
-                                            <Save size={14} className="mr-1"/> 确认更换
-                                        </button>
+                                        <>
+                                            <button 
+                                                onClick={() => setTempBgImage(bgImage)}
+                                                className="px-3 py-1.5 bg-white/90 text-gray-700 shadow-sm rounded-lg text-xs font-medium hover:bg-white transition-colors flex items-center"
+                                            >
+                                                取消
+                                            </button>
+                                            <button 
+                                                onClick={handleSaveBackground}
+                                                className="px-3 py-1.5 bg-primary-600 text-white shadow-sm rounded-lg text-xs font-medium hover:bg-primary-700 transition-colors flex items-center animate-pulse"
+                                            >
+                                                <Save size={14} className="mr-1"/> 确认更换
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -169,6 +234,54 @@ export default function SettingsModal({ isOpen, onClose }) {
                                     />
                                 ))}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'directory' && (
+                    <div className="space-y-8">
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">当前根目录</h3>
+                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col space-y-3">
+                                <div className="text-sm font-mono text-gray-600 break-all bg-white p-2 rounded border border-gray-100">
+                                    {currentRoot || '未设置'}
+                                </div>
+                                <button 
+                                    onClick={handleChangeRoot}
+                                    className="self-end px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+                                >
+                                    <Folder size={16} className="mr-2" />
+                                    更改目录
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">最近使用</h3>
+                            {history.length > 0 ? (
+                                <div className="space-y-2">
+                                    {history.map((path, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors group">
+                                            <span className="text-xs text-gray-600 font-mono truncate flex-1 mr-4" title={path}>{path}</span>
+                                            {path !== currentRoot && (
+                                                <button 
+                                                    onClick={() => handleHistoryClick(path)}
+                                                    className="px-3 py-1 text-xs font-medium text-primary-600 bg-primary-50 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    切换
+                                                </button>
+                                            )}
+                                            {path === currentRoot && (
+                                                <span className="px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md">
+                                                    当前
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-gray-400 text-sm">暂无历史记录</div>
+                            )}
                         </div>
                     </div>
                 )}

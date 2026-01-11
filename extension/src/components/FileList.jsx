@@ -1,7 +1,7 @@
 import { Folder, File, FileImage, FileText, FileCode, ChevronRight, ExternalLink } from 'lucide-react';
 
 const getFileIcon = (name, isDirectory) => {
-    if (isDirectory) return <Folder className="text-primary-500 fill-primary-50" size={20} />;
+    if (isDirectory) return <Folder className="text-primary-500 fill-primary-50" size={24} />;
     
     const ext = name.split('.').pop().toLowerCase();
     switch (ext) {
@@ -9,26 +9,26 @@ const getFileIcon = (name, isDirectory) => {
         case 'jpg':
         case 'jpeg':
         case 'gif':
-            return <FileImage className="text-purple-500" size={20} />;
+            return <FileImage className="text-purple-500" size={24} />;
         case 'txt':
         case 'md':
-            return <FileText className="text-gray-500" size={20} />;
+            return <FileText className="text-gray-500" size={24} />;
         case 'js':
         case 'jsx':
         case 'ts':
         case 'tsx':
         case 'json':
-            return <FileCode className="text-blue-500" size={20} />;
+            return <FileCode className="text-blue-500" size={24} />;
         default:
-            return <File className="text-gray-400" size={20} />;
+            return <File className="text-gray-400" size={24} />;
     }
 };
 
-export default function FileList({ files, onNavigate, depth }) {
+export default function FileList({ files, onNavigate, onContextMenu, depth }) {
   return (
     <div className="flex flex-col pb-2">
-      <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-surface-50 sticky top-0 border-b border-gray-100">
-        {depth === 1 ? 'Select to Explore' : 'Click to Open'}
+      <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/50 backdrop-blur-md sticky top-0 border-b border-white/20 z-10">
+        {depth === 1 ? '内容列表' : '文件列表'}
       </div>
       
       <div className="p-2 space-y-1">
@@ -36,13 +36,18 @@ export default function FileList({ files, onNavigate, depth }) {
             <div 
             key={i}
             onClick={() => onNavigate(file)}
-            className="group flex items-center p-3 rounded-lg hover:bg-surface-100 cursor-pointer transition-colors border border-transparent hover:border-surface-200"
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (onContextMenu) onContextMenu(e, file);
+            }}
+            className="group flex items-center p-3 rounded-xl hover:bg-white/60 cursor-pointer transition-colors border border-transparent hover:border-white/40"
             >
-            <div className="mr-4 text-gray-400 group-hover:text-gray-600">
+            <div className="mr-4 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:scale-110">
                 {getFileIcon(file.name, file.isDirectory)}
             </div>
             
-            <span className="flex-1 text-sm text-gray-700 font-medium truncate">
+            <span className="flex-1 text-sm text-gray-700 font-medium truncate group-hover:text-primary-800">
                 {file.name}
             </span>
 

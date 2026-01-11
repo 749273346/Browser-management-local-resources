@@ -62,6 +62,35 @@ app.post('/api/open', (req, res) => {
     });
 });
 
+// API to open folder picker dialog
+app.post('/api/pick-folder', (req, res) => {
+    // PowerShell command to open FolderBrowserDialog
+    // Force UTF-8 encoding for output to handle non-ASCII paths correctly
+    const psCommand = `
+        [Console]::OutputEncoding = [System.Text.Encoding]::UTF8;
+        Add-Type -AssemblyName System.Windows.Forms;
+        $f = New-Object System.Windows.Forms.FolderBrowserDialog;
+        $f.Description = 'Select Root Directory';
+        $result = $f.ShowDialog();
+        if ($result -eq 'OK') {
+            Write-Output $f.SelectedPath
+        }
+    `;
+
+    // Encode command to avoid quoting issues
+    const command = `powershell -Command "${psCommand.replace(/\n/g, ' ')}"`;
+
+    exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+            return res.json({ path: '' });
+        }
+        
+        const selectedPath = stdout.trim();
+        res.json({ path: selectedPath });
+    });
+});
+
 // API to check if path exists and is a directory
 app.post('/api/check-path', async (req, res) => {
     const { path: targetPath } = req.body;
@@ -93,6 +122,26 @@ app.post('/api/mkdir', async (req, res) => {
         await fs.mkdir(targetPath);
         res.json({ success: true });
     } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Create File (Empty)
+app.post('/api/mkfile', async (req, res) => {
+    const { path: targetPath } = req.body;
+    if (!targetPath) return res.status(400).json({ error: 'Path is required' });
+
+    try {
+        // Check if file exists to prevent overwrite? 
+        // For "New File" logic, we usually ensure unique name on client side or handle EEXIST here.
+        // For now, let's just use 'wx' flag (fail if exists) or just standard write (overwrite).
+        // Standard "New" behavior usually implies we found a unique name first.
+        await fs.writeFile(targetPath, '', { flag: 'wx' }); 
+        res.json({ success: true });
+    } catch (error) {
+        if (error.code === 'EEXIST') {
+            return res.status(400).json({ error: 'File already exists' });
+        }
         res.status(500).json({ error: error.message });
     }
 });

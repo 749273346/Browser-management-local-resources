@@ -4,8 +4,10 @@ import { useHiddenFiles } from './hooks/useHiddenFiles'
 import WelcomeScreen from './components/WelcomeScreen'
 import TopBar from './components/TopBar'
 import FileGrid from './components/FileGrid'
+import FileList from './components/FileList'
 import SettingsModal from './components/SettingsModal'
 import ContextMenu from './components/ContextMenu'
+import Toast from './components/Toast'
 import { applyTheme } from './theme'
 
 function App() {
@@ -17,6 +19,7 @@ function App() {
     fetchFiles, 
     openInExplorer,
     createFolder,
+    createFile,
     renameItem,
     deleteItem
   } = useFileSystem();
@@ -24,6 +27,14 @@ function App() {
   const { toggleHidden } = useHiddenFiles();
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  
+  // Toast State
+  const [toast, setToast] = useState({ message: '', type: 'success' });
+  const showToast = (message, type = 'success') => {
+      setToast({ message, type });
+      setTimeout(() => setToast({ message: '', type: 'success' }), 3000);
+  };
   
   // Context Menu State
   const [contextMenu, setContextMenu] = useState({ x: null, y: null, file: null });
@@ -122,14 +133,17 @@ function App() {
                   const newPath = file.path.replace(file.name, newName);
                   await renameItem(file.path, newPath);
                   fetchFiles(currentPath);
+                  showToast('重命名成功');
               }
           } else if (action === 'delete') {
               if (confirm(`确定要删除 "${file.name}" 吗? 此操作无法撤销。`)) {
                   await deleteItem(file.path);
                   fetchFiles(currentPath);
+                  showToast('删除成功');
               }
           } else if (action === 'hide') {
               toggleHidden(file.path);
+              showToast('已更新显示状态');
           } else if (action === 'new-folder') {
               const name = prompt('请输入文件夹名称 (Folder Name):', '新建文件夹');
               if (name) {
@@ -140,12 +154,51 @@ function App() {
                   const newPath = `${currentPath}${separator}${name}`;
                   await createFolder(newPath);
                   fetchFiles(currentPath);
+                  showToast('文件夹创建成功');
               }
+          } else if (action.startsWith('new-file-')) {
+              const type = action.replace('new-file-', '');
+              const extMap = {
+                  'txt': '.txt',
+                  'doc': '.doc',
+                  'docx': '.docx',
+                  'xls': '.xls',
+                  'xlsx': '.xlsx',
+                  'ppt': '.ppt',
+                  'pptx': '.pptx'
+              };
+              const ext = extMap[type] || '';
+              const defaultName = `新建文件${ext}`;
+              
+              const name = prompt(`请输入文件名 (File Name):`, defaultName);
+              if (name) {
+                  let finalName = name;
+                  // Only append extension if not present
+                  if (!finalName.toLowerCase().endsWith(ext)) {
+                      finalName += ext;
+                  }
+                  
+                  // Basic validation
+                  const invalidChars = /[<>:"/\\|?*]/;
+                  if (invalidChars.test(finalName)) {
+                      showToast('文件名包含非法字符', 'error');
+                      return;
+                  }
+
+                  const separator = currentPath.includes('/') ? '/' : '\\';
+                  const newPath = `${currentPath}${separator}${finalName}`;
+                  await createFile(newPath);
+                  fetchFiles(currentPath);
+                  showToast('文件创建成功');
+              }
+          } else if (action === 'properties') {
+              alert(`名称: ${file.name}\n路径: ${file.path}\n类型: ${file.isDirectory ? '文件夹' : '文件'}`);
           } else if (action === 'refresh') {
               fetchFiles(currentPath);
+              showToast('已刷新');
           }
       } catch (err) {
-          alert('操作失败: ' + err.message);
+          showToast('操作失败: ' + err.message, 'error');
       }
   };
 
@@ -165,6 +218,8 @@ function App() {
         onReset={handleReset}
         depth={depth}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        viewMode={viewMode}
+        onToggleView={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
       />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar relative z-0">
@@ -186,11 +241,20 @@ function App() {
           </div>
         ) : (
           <>
-            <FileGrid 
-                files={files} 
-                onNavigate={handleNavigate} 
-                onContextMenu={handleContextMenu} // Pass down to override item right-click
-            />
+            {viewMode === 'grid' ? (
+                <FileGrid 
+                    files={files} 
+                    onNavigate={handleNavigate} 
+                    onContextMenu={handleContextMenu}
+                />
+            ) : (
+                <FileList 
+                    files={files} 
+                    onNavigate={handleNavigate} 
+                    onContextMenu={handleContextMenu}
+                    depth={depth}
+                />
+            )}
             
             {files.length === 0 && !loading && (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500 bg-white/30 backdrop-blur-sm rounded-2xl mx-8 mt-8 border border-white/20">
@@ -212,6 +276,12 @@ function App() {
         file={contextMenu.file} 
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null })}
+      />
+
+      <Toast 
+        message={toast.message} 
+        type={toast.type} 
+        onClose={() => setToast({ message: '', type: 'success' })} 
       />
     </div>
   )

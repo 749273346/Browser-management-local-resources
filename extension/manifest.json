@@ -12,6 +12,16 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Local Resources"
+    "default_title": "Local Resources",
+    "default_icon": {
+      "16": "icon.svg",
+      "48": "icon.svg",
+      "128": "icon.svg"
+    }
+  },
+  "icons": {
+    "16": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
   }
 }

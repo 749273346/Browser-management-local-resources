@@ -1,10 +1,24 @@
 import { useState } from 'react';
-import { Folder } from 'lucide-react';
+import { Folder, FolderOpen } from 'lucide-react';
 
 export default function WelcomeScreen({ onComplete }) {
   const [path, setPath] = useState('');
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
+
+  const handlePickFolder = async () => {
+      try {
+          const res = await fetch('http://localhost:3001/api/pick-folder', { method: 'POST' });
+          const data = await res.json();
+          if (data.path) {
+              setPath(data.path);
+              setError('');
+          }
+      } catch (err) {
+          console.error('Failed to pick folder:', err);
+          setError('无法调用文件夹选择器 (Could not open picker)');
+      }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -58,12 +72,20 @@ export default function WelcomeScreen({ onComplete }) {
               onChange={(e) => setPath(e.target.value)}
               placeholder="例如: C:\Users\Name\Documents"
               className={`
-                w-full px-6 py-4 rounded-2xl border bg-white text-gray-900 text-lg shadow-sm
+                w-full pl-6 pr-14 py-4 rounded-2xl border bg-white text-gray-900 text-lg shadow-sm
                 focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500
                 transition-all duration-200
                 ${error ? 'border-red-300 focus:ring-red-100' : 'border-gray-200 group-hover:border-gray-300'}
               `}
             />
+            <button
+                type="button"
+                onClick={handlePickFolder}
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="选择文件夹"
+            >
+                <FolderOpen size={20} />
+            </button>
         </div>
 
         {error && (
