@@ -19,10 +19,10 @@ export default function Toast({ message, type = 'success', onClose, duration = 3
 
   const isSuccess = type === 'success';
   const Icon = isSuccess ? CheckCircle : AlertCircle;
-  const bgColor = isSuccess ? 'bg-green-50' : 'bg-red-50';
-  const borderColor = isSuccess ? 'border-green-200' : 'border-red-200';
-  const textColor = isSuccess ? 'text-green-800' : 'text-red-800';
-  const iconColor = isSuccess ? 'text-green-500' : 'text-red-500';
+  const bgColor = isSuccess ? 'bg-green-50 dark:bg-green-950/40' : 'bg-red-50 dark:bg-red-950/40';
+  const borderColor = isSuccess ? 'border-green-200 dark:border-green-900/50' : 'border-red-200 dark:border-red-900/50';
+  const textColor = isSuccess ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200';
+  const iconColor = isSuccess ? 'text-green-500 dark:text-green-300' : 'text-red-500 dark:text-red-300';
 
   return (
     <div className={`
@@ -36,7 +36,7 @@ export default function Toast({ message, type = 'success', onClose, duration = 3
       <span className="font-medium text-sm">{message}</span>
       <button 
         onClick={() => setVisible(false)}
-        className={`ml-4 p-1 rounded-full hover:bg-black/5 transition-colors ${textColor}`}
+        className={`ml-4 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors ${textColor}`}
       >
         <X size={14} />
       </button>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder } from 'lucide-react';
-import { themes, applyTheme } from '../theme';
+import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder, Sun, Moon } from 'lucide-react';
+import { themes, applyTheme, applyColorMode } from '../theme';
 
 const normalizeBgValue = (value) => {
   if (!value || value === 'none') return '';
@@ -30,6 +30,14 @@ const PRESET_WALLPAPERS = [
   {
     name: '复兴号 (智能动车组 CR400AF-Z)',
     url: '/wallpapers/gz_hsr_fuxing.jpg'
+  },
+  {
+    name: '广铁历史博物馆 (SS6B型电力机车)',
+    url: '/wallpapers/gz_museum_ss6b.jpg'
+  },
+  {
+    name: '惠州铁路历史 (惠州南站旧址)',
+    url: '/wallpapers/huizhou_station_old.jpg'
   }
 ];
 
@@ -42,6 +50,7 @@ export default function SettingsModal({ isOpen, onClose }) {
   const [glassOpacity, setGlassOpacity] = useState(localStorage.getItem('glassOpacity') || 0.8);
   const [glassBlur, setGlassBlur] = useState(localStorage.getItem('glassBlur') || 12);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'high-speed');
+  const [colorMode, setColorMode] = useState(localStorage.getItem('colorMode') || 'day');
   
   // Directory State
   const [currentRoot, setCurrentRoot] = useState(localStorage.getItem('rootPath') || '');
@@ -52,6 +61,7 @@ export default function SettingsModal({ isOpen, onClose }) {
       if (isOpen) {
           setTempBgImage(normalizeBgValue(localStorage.getItem('bgImage') || ''));
           setCurrentRoot(localStorage.getItem('rootPath') || '');
+          setColorMode(localStorage.getItem('colorMode') || 'day');
           const savedHistory = JSON.parse(localStorage.getItem('pathHistory') || '[]');
           setHistory(savedHistory);
       }
@@ -106,6 +116,12 @@ export default function SettingsModal({ isOpen, onClose }) {
       setCurrentTheme(themeKey);
   };
 
+  const handleModeChange = (mode) => {
+      const resolved = applyColorMode(mode);
+      setColorMode(resolved);
+      applyTheme(currentTheme);
+  };
+
   const handleChangeRoot = async () => {
       try {
           const res = await fetch('http://localhost:3001/api/pick-folder', { method: 'POST' });
@@ -142,44 +158,57 @@ export default function SettingsModal({ isOpen, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="bg-white rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-[600px] h-[550px] flex overflow-hidden">
         {/* Sidebar */}
-        <div className="w-48 bg-gray-50 border-r border-gray-200 p-4 flex flex-col space-y-2">
-            <h2 className="text-lg font-bold text-gray-800 mb-4 px-2">设置</h2>
+        <div className="w-48 bg-gray-50 dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800 p-4 flex flex-col">
+            <h2 className="text-lg font-bold text-gray-800 dark:text-slate-100 mb-4 px-2">设置</h2>
             
-            <button 
-                onClick={() => setActiveTab('appearance')}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-                <ImageIcon size={18} />
-                <span>外观设置</span>
-            </button>
-            <button 
-                onClick={() => setActiveTab('directory')}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'directory' ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-                <Folder size={18} />
-                <span>目录管理</span>
-            </button>
-            <button 
-                onClick={() => setActiveTab('tweaks')}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'tweaks' ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-                <Sliders size={18} />
-                <span>视觉微调</span>
-            </button>
-            <button 
-                onClick={() => setActiveTab('about')}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'about' ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100'}`}
-            >
-                <Info size={18} />
-                <span>关于</span>
-            </button>
+            <div className="flex flex-col space-y-2">
+                <button 
+                    onClick={() => setActiveTab('appearance')}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'appearance' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                >
+                    <ImageIcon size={18} />
+                    <span>外观设置</span>
+                </button>
+                <button 
+                    onClick={() => setActiveTab('directory')}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'directory' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                >
+                    <Folder size={18} />
+                    <span>目录管理</span>
+                </button>
+                <button 
+                    onClick={() => setActiveTab('tweaks')}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'tweaks' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                >
+                    <Sliders size={18} />
+                    <span>视觉微调</span>
+                </button>
+                <button 
+                    onClick={() => setActiveTab('about')}
+                    className={`flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'about' ? 'bg-primary-100 text-primary-700 dark:bg-primary-500/15 dark:text-primary-200' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800'}`}
+                >
+                    <Info size={18} />
+                    <span>关于</span>
+                </button>
+            </div>
+
+            <div className="mt-auto pt-3">
+                <button
+                    onClick={() => handleModeChange(colorMode === 'night' ? 'day' : 'night')}
+                    className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-gray-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 text-gray-700 dark:text-slate-200 hover:bg-white dark:hover:bg-slate-900 transition-colors"
+                    title={colorMode === 'night' ? '切换到白天模式' : '切换到黑夜模式'}
+                    aria-label={colorMode === 'night' ? '切换到白天模式' : '切换到黑夜模式'}
+                >
+                    {colorMode === 'night' ? <Sun size={18} /> : <Moon size={18} />}
+                </button>
+            </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 flex flex-col relative">
-            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:text-slate-400 dark:hover:text-slate-200">
                 <X size={24} />
             </button>
 
@@ -187,7 +216,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                 {activeTab === 'appearance' && (
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">主题色</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">主题色</h3>
                             <div className="grid grid-cols-3 gap-3">
                                 {Object.entries(themes).map(([key, theme]) => (
                                     <button
@@ -195,29 +224,29 @@ export default function SettingsModal({ isOpen, onClose }) {
                                         onClick={() => handleThemeChange(key)}
                                         className={`
                                             p-3 rounded-xl border-2 text-left transition-all
-                                            ${currentTheme === key ? 'border-primary-500 bg-primary-50' : 'border-transparent bg-gray-50 hover:bg-gray-100'}
+                                            ${currentTheme === key ? 'border-primary-500 bg-primary-50 dark:bg-primary-500/15' : 'border-transparent bg-gray-50 hover:bg-gray-100 dark:bg-slate-800/60 dark:hover:bg-slate-800'}
                                         `}
                                     >
                                         <div className="w-6 h-6 rounded-full mb-2" style={{ backgroundColor: theme.colors.primary }}></div>
-                                        <div className="text-xs font-medium text-gray-700">{theme.name}</div>
+                                        <div className="text-xs font-medium text-gray-700 dark:text-slate-200">{theme.name}</div>
                                     </button>
                                 ))}
                             </div>
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">背景壁纸</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">背景壁纸</h3>
                             
                             {/* Preview Area */}
-                            <div className="mb-4 relative h-40 w-full rounded-xl border-2 border-gray-200 bg-gray-100 overflow-hidden flex items-center justify-center">
+                            <div className="mb-4 relative h-40 w-full rounded-xl border-2 border-gray-200 dark:border-slate-700 bg-gray-100 dark:bg-slate-800 overflow-hidden flex items-center justify-center">
                                 {tempBgImage ? (
                                     <img src={tempBgImage} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
-                                    <span className="text-gray-400 text-sm">暂无预览</span>
+                                    <span className="text-gray-400 dark:text-slate-400 text-sm">暂无预览</span>
                                 )}
                                 
                                 <div className="absolute bottom-3 right-3 flex space-x-2">
-                                    <label className="px-3 py-1.5 bg-white/90 backdrop-blur shadow-sm rounded-lg text-xs font-medium cursor-pointer hover:bg-white transition-colors flex items-center">
+                                    <label className="px-3 py-1.5 bg-white/90 dark:bg-slate-900/80 dark:text-slate-200 backdrop-blur shadow-sm rounded-lg text-xs font-medium cursor-pointer hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center">
                                         <Upload size={14} className="mr-1"/> 选择图片
                                         <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
                                     </label>
@@ -226,7 +255,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                                         <>
                                             <button 
                                                 onClick={() => setTempBgImage(bgImage)}
-                                                className="px-3 py-1.5 bg-white/90 text-gray-700 shadow-sm rounded-lg text-xs font-medium hover:bg-white transition-colors flex items-center"
+                                                className="px-3 py-1.5 bg-white/90 dark:bg-slate-900/80 text-gray-700 dark:text-slate-200 shadow-sm rounded-lg text-xs font-medium hover:bg-white dark:hover:bg-slate-900 transition-colors flex items-center"
                                             >
                                                 取消
                                             </button>
@@ -245,7 +274,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                             <div className="grid grid-cols-3 gap-3">
                                 <button 
                                     onClick={() => setTempBgImage('')}
-                                    className={`h-16 rounded-lg border-2 flex items-center justify-center bg-gray-100 text-gray-500 text-xs font-medium ${!tempBgImage ? 'border-primary-500' : 'border-transparent'}`}
+                                    className={`h-16 rounded-lg border-2 flex items-center justify-center bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-300 text-xs font-medium ${!tempBgImage ? 'border-primary-500' : 'border-transparent'}`}
                                 >
                                     无背景
                                 </button>
@@ -266,9 +295,9 @@ export default function SettingsModal({ isOpen, onClose }) {
                 {activeTab === 'directory' && (
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">当前根目录</h3>
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 flex flex-col space-y-3">
-                                <div className="text-sm font-mono text-gray-600 break-all bg-white p-2 rounded border border-gray-100">
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">当前根目录</h3>
+                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col space-y-3">
+                                <div className="text-sm font-mono text-gray-600 dark:text-slate-300 break-all bg-white dark:bg-slate-900 p-2 rounded border border-gray-100 dark:border-slate-700">
                                     {currentRoot || '未设置'}
                                 </div>
                                 <button 
@@ -282,22 +311,22 @@ export default function SettingsModal({ isOpen, onClose }) {
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">最近使用</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">最近使用</h3>
                             {history.length > 0 ? (
                                 <div className="space-y-2">
                                     {history.map((path, idx) => (
-                                        <div key={idx} className="flex items-center justify-between p-3 bg-white border border-gray-100 rounded-xl hover:border-primary-200 transition-colors group">
-                                            <span className="text-xs text-gray-600 font-mono truncate flex-1 mr-4" title={path}>{path}</span>
+                                        <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-primary-200 dark:hover:border-primary-500/40 transition-colors group">
+                                            <span className="text-xs text-gray-600 dark:text-slate-300 font-mono truncate flex-1 mr-4" title={path}>{path}</span>
                                             {path !== currentRoot && (
                                                 <button 
                                                     onClick={() => handleHistoryClick(path)}
-                                                    className="px-3 py-1 text-xs font-medium text-primary-600 bg-primary-50 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    className="px-3 py-1 text-xs font-medium text-primary-600 dark:text-primary-200 bg-primary-50 dark:bg-primary-500/15 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
                                                 >
                                                     切换
                                                 </button>
                                             )}
                                             {path === currentRoot && (
-                                                <span className="px-2 py-1 text-xs font-medium text-green-600 bg-green-50 rounded-md">
+                                                <span className="px-2 py-1 text-xs font-medium text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-950/40 rounded-md">
                                                     当前
                                                 </span>
                                             )}
@@ -305,7 +334,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-8 text-gray-400 text-sm">暂无历史记录</div>
+                                <div className="text-center py-8 text-gray-400 dark:text-slate-400 text-sm">暂无历史记录</div>
                             )}
                         </div>
                     </div>
@@ -314,7 +343,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                 {activeTab === 'tweaks' && (
                     <div className="space-y-8">
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">界面透明度</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">界面透明度</h3>
                             <div className="flex items-center space-x-4">
                                 <input 
                                     type="range" 
@@ -323,15 +352,15 @@ export default function SettingsModal({ isOpen, onClose }) {
                                     step="0.05" 
                                     value={glassOpacity}
                                     onChange={(e) => setGlassOpacity(e.target.value)}
-                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                                    className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
                                 />
-                                <span className="text-sm font-mono w-12 text-right">{Math.round(glassOpacity * 100)}%</span>
+                                <span className="text-sm font-mono w-12 text-right text-gray-800 dark:text-slate-200">{Math.round(glassOpacity * 100)}%</span>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">调整卡片和面板的背景不透明度。</p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">调整卡片和面板的背景不透明度。</p>
                         </div>
 
                         <div>
-                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4">毛玻璃模糊度</h3>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">毛玻璃模糊度</h3>
                             <div className="flex items-center space-x-4">
                                 <input 
                                     type="range" 
@@ -340,23 +369,23 @@ export default function SettingsModal({ isOpen, onClose }) {
                                     step="1" 
                                     value={glassBlur}
                                     onChange={(e) => setGlassBlur(e.target.value)}
-                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                                    className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-600"
                                 />
-                                <span className="text-sm font-mono w-12 text-right">{glassBlur}px</span>
+                                <span className="text-sm font-mono w-12 text-right text-gray-800 dark:text-slate-200">{glassBlur}px</span>
                             </div>
-                            <p className="text-xs text-gray-500 mt-2">调整背景模糊程度，数值越高越模糊。</p>
+                            <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">调整背景模糊程度，数值越高越模糊。</p>
                         </div>
                     </div>
                 )}
 
                 {activeTab === 'about' && (
                     <div className="text-center py-8">
-                        <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-primary-100 dark:bg-primary-500/15 text-primary-600 dark:text-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Info size={32} />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900">调度中心资源管理系统</h2>
-                        <p className="text-sm text-gray-500 mt-2">Version 2.1.0 (High-Speed Edition)</p>
-                        <div className="mt-8 p-4 bg-gray-50 rounded-xl text-left text-sm text-gray-600 space-y-2">
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">调度中心资源管理系统</h2>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">Version 2.1.0 (High-Speed Edition)</p>
+                        <div className="mt-8 p-4 bg-gray-50 dark:bg-slate-800/60 rounded-xl text-left text-sm text-gray-600 dark:text-slate-300 space-y-2">
                             <p>🚄 <strong>广铁定制版</strong>：专为铁路职工打造的高效工具。</p>
                             <p>🎨 <strong>个性化引擎</strong>：支持自定义壁纸与透明度。</p>
                             <p>🛡️ <strong>安全隐私</strong>：所有配置仅保存在本地。</p>

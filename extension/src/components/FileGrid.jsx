@@ -13,7 +13,7 @@ const getFileIcon = (name, isDirectory) => {
             return <FileImage className="text-purple-500" size={48} strokeWidth={1.5} />;
         case 'txt':
         case 'md':
-            return <FileText className="text-gray-500" size={48} strokeWidth={1.5} />;
+            return <FileText className="text-gray-500 dark:text-slate-300" size={48} strokeWidth={1.5} />;
         case 'js':
         case 'jsx':
         case 'ts':
@@ -21,7 +21,7 @@ const getFileIcon = (name, isDirectory) => {
         case 'json':
             return <FileCode className="text-blue-500" size={48} strokeWidth={1.5} />;
         default:
-            return <File className="text-gray-400" size={48} strokeWidth={1.5} />;
+            return <File className="text-gray-400 dark:text-slate-400" size={48} strokeWidth={1.5} />;
     }
 };
 
@@ -41,22 +41,22 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden })
                     if (onContextMenu) onContextMenu(e, file);
                 }}
                 className={`
-                    group flex flex-col items-center p-4 rounded-2xl border border-white/40 shadow-sm 
-                    hover:shadow-xl hover:border-primary-200 cursor-pointer transition-all duration-300 ease-out
+                    group flex flex-col items-center p-4 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm 
+                    hover:shadow-xl hover:border-primary-200 dark:hover:border-primary-500/40 cursor-pointer transition-all duration-300 ease-out
                     hover:-translate-y-1
                     backdrop-blur-[var(--glass-blur)]
-                    ${hidden ? 'opacity-40 grayscale border-dashed' : 'bg-white/40 hover:bg-white/60'}
+                    ${hidden ? 'opacity-40 grayscale border-dashed' : 'bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60'}
                 `}
                 >
                 <div className="mb-4 transition-transform group-hover:scale-110 duration-300 relative">
                     {getFileIcon(file.name, file.isDirectory)}
                     {hidden && (
-                        <div className="absolute -top-1 -right-1 bg-gray-200 rounded-full p-0.5">
-                            <EyeOff size={12} className="text-gray-500"/>
+                        <div className="absolute -top-1 -right-1 bg-gray-200 dark:bg-slate-700 rounded-full p-0.5">
+                            <EyeOff size={12} className="text-gray-500 dark:text-slate-200"/>
                         </div>
                     )}
                 </div>
-                <span className="text-sm text-center text-gray-700 font-medium break-all line-clamp-2 w-full px-1 leading-tight group-hover:text-primary-800 transition-colors">
+                <span className="text-sm text-center text-gray-700 dark:text-slate-200 font-medium break-all line-clamp-2 w-full px-1 leading-tight group-hover:text-primary-800 dark:group-hover:text-primary-200 transition-colors">
                     {file.name}
                 </span>
                 </div>

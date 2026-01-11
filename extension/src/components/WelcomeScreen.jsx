@@ -60,16 +60,16 @@ export default function WelcomeScreen({ onComplete }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-surface-50 to-primary-50 text-center">
-      <div className="w-24 h-24 bg-white text-primary-600 rounded-3xl shadow-xl flex items-center justify-center mb-8 animate-fade-in">
+    <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-gradient-to-br from-surface-50 to-primary-50 dark:from-slate-950 dark:to-slate-900 text-center">
+      <div className="w-24 h-24 bg-white dark:bg-slate-900 text-primary-600 dark:text-primary-200 rounded-3xl shadow-xl flex items-center justify-center mb-8 animate-fade-in">
         <Folder size={48} strokeWidth={1.5} />
       </div>
       
-      <h1 className="text-4xl font-normal text-gray-900 mb-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
+      <h1 className="text-4xl font-normal text-gray-900 dark:text-slate-100 mb-4 animate-fade-in" style={{animationDelay: '0.1s'}}>
         欢迎使用调度中心
       </h1>
       
-      <p className="text-gray-500 mb-10 max-w-md text-lg animate-fade-in" style={{animationDelay: '0.2s'}}>
+      <p className="text-gray-500 dark:text-slate-300 mb-10 max-w-md text-lg animate-fade-in" style={{animationDelay: '0.2s'}}>
         连接本地文件夹，开启全新的全屏资源管理体验。
       </p>
 
@@ -81,16 +81,16 @@ export default function WelcomeScreen({ onComplete }) {
               onChange={(e) => setPath(e.target.value)}
               placeholder="例如: C:\Users\Name\Documents"
               className={`
-                w-full pl-6 pr-14 py-4 rounded-2xl border bg-white text-gray-900 text-lg shadow-sm
+                w-full pl-6 pr-14 py-4 rounded-2xl border bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 text-lg shadow-sm
                 focus:outline-none focus:ring-4 focus:ring-primary-100 focus:border-primary-500
                 transition-all duration-200
-                ${error ? 'border-red-300 focus:ring-red-100' : 'border-gray-200 group-hover:border-gray-300'}
+                ${error ? 'border-red-300 dark:border-red-700 focus:ring-red-100' : 'border-gray-200 dark:border-slate-700 group-hover:border-gray-300 dark:group-hover:border-slate-600'}
               `}
             />
             <button
                 type="button"
                 onClick={handlePickFolder}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 text-gray-400 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-200 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
                 title="选择文件夹"
             >
                 <FolderOpen size={20} />

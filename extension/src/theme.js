@@ -59,9 +59,18 @@ export const themes = {
   }
 };
 
+export const applyColorMode = (mode) => {
+  const root = document.documentElement;
+  const resolved = mode === 'night' ? 'night' : 'day';
+  root.classList.toggle('dark', resolved === 'night');
+  localStorage.setItem('colorMode', resolved);
+  return resolved;
+};
+
 export const applyTheme = (themeName) => {
   const theme = themes[themeName] || themes['high-speed'];
   const root = document.documentElement;
+  const colorMode = applyColorMode(localStorage.getItem('colorMode') || 'day');
   
   Object.entries(theme.colors).forEach(([key, value]) => {
     // We map these to CSS variables that Tailwind can use if we configure it right,
@@ -71,6 +80,14 @@ export const applyTheme = (themeName) => {
   });
   
   root.style.setProperty('--bg-gradient', theme.bgGradient);
+
+  if (colorMode === 'night') {
+    root.style.setProperty('--color-surface', '#0B1220');
+    root.style.setProperty('--color-surfaceVariant', '#111827');
+    root.style.setProperty('--color-background', '#0B1220');
+    root.style.setProperty('--color-outline', '#334155');
+    root.style.setProperty('--bg-gradient', 'linear-gradient(135deg, #0B1220 0%, #111827 100%)');
+  }
   
   // Save preference
   localStorage.setItem('appTheme', themeName);

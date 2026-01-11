@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType } from 'lucide-react';
 
 export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden }) {
@@ -28,7 +28,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden 
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); onClose(); }}
       className={`w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors
-        ${danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-700 hover:bg-primary-50 hover:text-primary-700'}
+        ${danger ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30' : 'text-gray-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:text-primary-700 dark:hover:text-primary-200'}
         ${className}
       `}
     >
@@ -37,19 +37,19 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden 
     </button>
   );
 
-  const Separator = () => <div className="h-px bg-gray-200 my-1 mx-2"></div>;
-  const MenuHeader = ({ title }) => <div className="px-3 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">{title}</div>;
+  const Separator = () => <div className="h-px bg-gray-200 dark:bg-slate-700 my-1 mx-2"></div>;
+  const MenuHeader = ({ title }) => <div className="px-3 py-1 text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">{title}</div>;
 
   return (
     <div
       ref={menuRef}
       style={style}
-      className="fixed z-50 w-64 bg-white/90 backdrop-blur-xl border border-white/40 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left"
+      className="fixed z-50 w-64 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/40 dark:border-white/10 shadow-2xl rounded-xl p-1.5 animate-fade-in origin-top-left"
     >
       {file ? (
         // File/Folder Context Menu
         <>
-          <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 uppercase tracking-wider truncate">
+          <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider truncate">
              {file.name}
           </div>
           {file.isDirectory && (

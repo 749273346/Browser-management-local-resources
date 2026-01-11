@@ -12,7 +12,7 @@ const getFileIcon = (name, isDirectory) => {
             return <FileImage className="text-purple-500" size={24} />;
         case 'txt':
         case 'md':
-            return <FileText className="text-gray-500" size={24} />;
+            return <FileText className="text-gray-500 dark:text-slate-300" size={24} />;
         case 'js':
         case 'jsx':
         case 'ts':
@@ -20,14 +20,14 @@ const getFileIcon = (name, isDirectory) => {
         case 'json':
             return <FileCode className="text-blue-500" size={24} />;
         default:
-            return <File className="text-gray-400" size={24} />;
+            return <File className="text-gray-400 dark:text-slate-400" size={24} />;
     }
 };
 
 export default function FileList({ files, onNavigate, onContextMenu, depth, isHidden }) {
   return (
     <div className="flex flex-col pb-2">
-      <div className="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider bg-white/50 backdrop-blur-md sticky top-0 border-b border-white/20 z-10">
+      <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider bg-white/50 dark:bg-slate-900/60 backdrop-blur-md sticky top-0 border-b border-white/20 dark:border-white/10 z-10">
         {depth === 1 ? '内容列表' : '文件列表'}
       </div>
       
@@ -43,27 +43,27 @@ export default function FileList({ files, onNavigate, onContextMenu, depth, isHi
                   e.stopPropagation();
                   if (onContextMenu) onContextMenu(e, file);
               }}
-              className={`group flex items-center p-3 rounded-xl cursor-pointer transition-colors border hover:border-white/40
-                ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 hover:bg-white/30' : 'border-transparent hover:bg-white/60'}
+              className={`group flex items-center p-3 rounded-xl cursor-pointer transition-colors border hover:border-white/40 dark:hover:border-white/10
+                ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 dark:border-slate-700 hover:bg-white/30 dark:hover:bg-slate-800/40' : 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'}
               `}
               >
-              <div className="mr-4 text-gray-400 group-hover:text-gray-600 transition-transform group-hover:scale-110 relative">
+              <div className="mr-4 text-gray-400 dark:text-slate-400 group-hover:text-gray-600 dark:group-hover:text-slate-200 transition-transform group-hover:scale-110 relative">
                   {getFileIcon(file.name, file.isDirectory)}
                   {hidden && (
-                    <div className="absolute -top-1 -right-1 bg-gray-200 rounded-full p-0.5">
-                      <EyeOff size={10} className="text-gray-500" />
+                    <div className="absolute -top-1 -right-1 bg-gray-200 dark:bg-slate-700 rounded-full p-0.5">
+                      <EyeOff size={10} className="text-gray-500 dark:text-slate-200" />
                     </div>
                   )}
               </div>
               
-              <span className="flex-1 text-sm text-gray-700 font-medium truncate group-hover:text-primary-800">
+              <span className="flex-1 text-sm text-gray-700 dark:text-slate-200 font-medium truncate group-hover:text-primary-800 dark:group-hover:text-primary-200">
                   {file.name}
               </span>
 
               {file.isDirectory && depth === 1 ? (
-                  <ChevronRight size={16} className="text-gray-300 group-hover:text-primary-400" />
+                  <ChevronRight size={16} className="text-gray-300 dark:text-slate-600 group-hover:text-primary-400 dark:group-hover:text-primary-200" />
               ) : (
-                  <ExternalLink size={14} className="text-gray-300 group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ExternalLink size={14} className="text-gray-300 dark:text-slate-600 group-hover:text-primary-400 dark:group-hover:text-primary-200 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
               </div>
           );

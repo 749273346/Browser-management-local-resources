@@ -8,7 +8,7 @@ import FileList from './components/FileList'
 import SettingsModal from './components/SettingsModal'
 import ContextMenu from './components/ContextMenu'
 import Toast from './components/Toast'
-import { applyTheme } from './theme'
+import { applyTheme, applyColorMode } from './theme'
 
 function App() {
   const { 
@@ -55,6 +55,8 @@ function App() {
   
   // Initialize Theme and Background
   useEffect(() => {
+      const savedMode = localStorage.getItem('colorMode') || 'day';
+      applyColorMode(savedMode);
       const savedTheme = localStorage.getItem('appTheme') || 'high-speed';
       applyTheme(savedTheme);
       
