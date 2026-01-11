@@ -1,5 +1,5 @@
 import { Folder, File, FileImage, FileText, FileCode, ChevronRight, EyeOff } from 'lucide-react';
-import { COLUMN_COLORS, getThemeColor } from '../constants/theme';
+import { COLUMN_COLORS, getEffectiveColorScheme } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory) => {
     if (isDirectory) return <Folder className="text-primary-500 fill-primary-50" size={20} />;
@@ -18,7 +18,6 @@ const getFileIcon = (name, isDirectory) => {
 };
 
 export default function DashboardView({ files, onNavigate, onContextMenu, isHidden, folderColors = {} }) {
-    // Separate folders (Columns) and loose files
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
 
@@ -60,23 +59,9 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                 <div className="flex space-x-6 min-w-max h-full">
                     {folders.map((folder, index) => {
                         let color = COLUMN_COLORS[index % COLUMN_COLORS.length];
+                        const effective = getEffectiveColorScheme(folder.path, folderColors);
+                        if (effective) color = effective;
                         
-                        // Check custom color or inheritance
-                        if (folderColors[folder.path]) {
-                            const custom = getThemeColor(folderColors[folder.path]);
-                            if (custom) color = custom;
-                        } else {
-                            // Inheritance check
-                            const parentPath = Object.keys(folderColors).find(path => 
-                                folder.path.startsWith(path) && 
-                                (folder.path[path.length] === '/' || folder.path[path.length] === '\\')
-                            );
-                            if (parentPath) {
-                                const custom = getThemeColor(folderColors[parentPath]);
-                                if (custom) color = custom;
-                            }
-                        }
-
                         const hidden = isHidden ? isHidden(folder.path) : false;
                         const children = folder.children || [];
 

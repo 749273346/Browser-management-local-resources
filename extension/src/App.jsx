@@ -11,6 +11,7 @@ import ContextMenu from './components/ContextMenu'
 import Toast from './components/Toast'
 import ConfirmDialog from './components/ConfirmDialog'
 import { applyTheme, applyColorMode } from './theme'
+import { COLUMN_COLORS } from './constants/theme'
 
 function App() {
   const { 
@@ -149,6 +150,29 @@ function App() {
       fetchFiles(path, mode === 'dashboard' ? 2 : 1);
     }
   }, [path, fetchFiles, folderViewModes]); // Added folderViewModes dependency to refetch if mode changes
+
+  useEffect(() => {
+      if (!isRoot || currentViewMode !== 'dashboard') return;
+      if (!Array.isArray(visibleFiles) || visibleFiles.length === 0) return;
+
+      const rootFolders = visibleFiles.filter(f => f.isDirectory);
+      if (rootFolders.length === 0) return;
+
+      setFolderColors(prev => {
+          let changed = false;
+          const next = { ...prev };
+          rootFolders.forEach((folder, index) => {
+              if (next[folder.path]) return;
+              next[folder.path] = COLUMN_COLORS[index % COLUMN_COLORS.length].id;
+              changed = true;
+          });
+          if (changed) {
+              localStorage.setItem('folderColors', JSON.stringify(next));
+              return next;
+          }
+          return prev;
+      });
+  }, [isRoot, currentViewMode, visibleFiles, setFolderColors]);
 
   const handleSetRoot = (newPath) => {
     localStorage.setItem('rootPath', newPath);
