@@ -17,10 +17,26 @@ app.get('/api/files', async (req, res) => {
     
     try {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        const files = entries.map(entry => ({
-            name: entry.name,
-            isDirectory: entry.isDirectory(),
-            path: path.join(dirPath, entry.name)
+        const files = await Promise.all(entries.map(async entry => {
+            const fullPath = path.join(dirPath, entry.name);
+            const isDirectory = entry.isDirectory();
+            let isEmpty = false;
+            
+            if (isDirectory) {
+                try {
+                    const children = await fs.readdir(fullPath);
+                    isEmpty = children.length === 0;
+                } catch (e) {
+                    // Ignore errors (e.g. permission denied)
+                }
+            }
+
+            return {
+                name: entry.name,
+                isDirectory,
+                path: fullPath,
+                isEmpty
+            };
         }));
         
         // Move directories to top
@@ -83,10 +99,13 @@ app.post('/api/pick-folder', (req, res) => {
     exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
         if (error) {
             console.error(`exec error: ${error}`);
-            return res.json({ path: '' });
+            return res.status(500).json({ error: 'Failed to open folder picker', details: error.message });
         }
         
         const selectedPath = stdout.trim();
+        if (!selectedPath) {
+             return res.json({ path: '' }); // User cancelled
+        }
         res.json({ path: selectedPath });
     });
 });

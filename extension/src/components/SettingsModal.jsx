@@ -2,18 +2,42 @@ import { useState, useEffect } from 'react';
 import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder } from 'lucide-react';
 import { themes, applyTheme } from '../theme';
 
-// CR-Guangzhou Wallpapers (Hosted or Base64 placeholders)
+const normalizeBgValue = (value) => {
+  if (!value || value === 'none') return '';
+  if (value.startsWith('url(')) {
+    return value.replace(/^url\((['"]?)(.*)\1\)$/, '$2');
+  }
+  return value;
+};
+
 const PRESET_WALLPAPERS = [
-    { name: '复兴号', url: 'https://images.unsplash.com/photo-1535557597501-0fee0a50433b?auto=format&fit=crop&q=80' },
-    { name: '广州南站', url: 'https://images.unsplash.com/photo-1565626424177-832454523770?auto=format&fit=crop&q=80' },
-    { name: '铁轨夕阳', url: 'https://images.unsplash.com/photo-1474487548417-781cb71495f3?auto=format&fit=crop&q=80' },
+  {
+    name: '蒸汽时代 (粤汉铁路 KF型)',
+    url: '/wallpapers/gz_steam_kf7.jpg'
+  },
+  {
+    name: '内燃时代 (广州站 DF4B)',
+    url: '/wallpapers/gz_diesel_df4b.jpg'
+  },
+  {
+    name: '电力时代 (广深线 SS8)',
+    url: '/wallpapers/gz_electric_ss8.jpg'
+  },
+  {
+    name: '高铁时代 (和谐号 CRH1A)',
+    url: '/wallpapers/gz_hsr_crh1a.jpg'
+  },
+  {
+    name: '复兴号 (智能动车组 CR400AF-Z)',
+    url: '/wallpapers/gz_hsr_fuxing.jpg'
+  }
 ];
 
 export default function SettingsModal({ isOpen, onClose }) {
   const [activeTab, setActiveTab] = useState('appearance');
   
   // Settings State
-  const [bgImage, setBgImage] = useState(localStorage.getItem('bgImage') || '');
+  const [bgImage, setBgImage] = useState(normalizeBgValue(localStorage.getItem('bgImage') || ''));
   const [tempBgImage, setTempBgImage] = useState(''); // For preview before saving
   const [glassOpacity, setGlassOpacity] = useState(localStorage.getItem('glassOpacity') || 0.8);
   const [glassBlur, setGlassBlur] = useState(localStorage.getItem('glassBlur') || 12);
@@ -26,7 +50,7 @@ export default function SettingsModal({ isOpen, onClose }) {
   // Initialize temp state when modal opens
   useEffect(() => {
       if (isOpen) {
-          setTempBgImage(localStorage.getItem('bgImage') || '');
+          setTempBgImage(normalizeBgValue(localStorage.getItem('bgImage') || ''));
           setCurrentRoot(localStorage.getItem('rootPath') || '');
           const savedHistory = JSON.parse(localStorage.getItem('pathHistory') || '[]');
           setHistory(savedHistory);
@@ -55,19 +79,20 @@ export default function SettingsModal({ isOpen, onClose }) {
   };
 
   const handleSaveBackground = () => {
-      setBgImage(tempBgImage);
+      const normalized = normalizeBgValue(tempBgImage);
+      setBgImage(normalized);
       const root = document.documentElement;
       
       // Ensure we handle "none" properly for clearing background
-      if (tempBgImage && tempBgImage !== 'none') {
-          root.style.setProperty('--bg-image', `url("${tempBgImage}")`);
+      if (normalized) {
+          root.style.setProperty('--bg-image', `url("${normalized}")`);
       } else {
           root.style.setProperty('--bg-image', 'none');
           setTempBgImage(''); // Reset temp state to empty string for UI consistency
       }
       
       // Save empty string to localStorage if "none" or empty
-      localStorage.setItem('bgImage', tempBgImage === 'none' ? '' : tempBgImage);
+      localStorage.setItem('bgImage', normalized);
       
       // Feedback
       // In a real app we'd use a toast. For now, we can maybe use a small state or just reliance on visual change.
@@ -229,7 +254,7 @@ export default function SettingsModal({ isOpen, onClose }) {
                                         key={i}
                                         onClick={() => setTempBgImage(wp.url)}
                                         className={`h-16 rounded-lg border-2 bg-cover bg-center transition-all ${tempBgImage === wp.url ? 'border-primary-500 ring-2 ring-primary-200' : 'border-transparent'}`}
-                                        style={{ backgroundImage: `url(${wp.url})` }}
+                                        style={{ backgroundImage: `url("${wp.url}")` }}
                                         title={wp.name}
                                     />
                                 ))}

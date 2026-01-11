@@ -24,7 +24,10 @@ function App() {
     deleteItem
   } = useFileSystem();
 
-  const { toggleHidden } = useHiddenFiles();
+  const { toggleHidden, isHidden, showHidden, toggleShowHidden } = useHiddenFiles();
+
+  // Filter files based on hidden status
+  const visibleFiles = files.filter(file => showHidden || !isHidden(file.path));
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -83,23 +86,19 @@ function App() {
 
   const handleNavigate = (file) => {
     if (file.isDirectory) {
-      const root = localStorage.getItem('rootPath');
-      let currentDepth = 0;
-      if (currentPath && root && currentPath.startsWith(root) && currentPath !== root) {
-          const rel = currentPath.substring(root.length);
-          currentDepth = rel.split(/[\\/]/).filter(Boolean).length;
+      // If folder is empty, open in system explorer directly
+      if (file.isEmpty) {
+        openInExplorer(file.path);
+        return;
       }
 
-      if (currentDepth >= 2) {
-          openInExplorer(file.path);
-      } else {
-          const targetUrl = `index.html?path=${encodeURIComponent(file.path)}`;
-          if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
-              chrome.tabs.create({ url: targetUrl });
-          } else {
-              window.open(targetUrl, '_blank');
-          }
-      }
+      // Update URL for persistence (supports refresh)
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('path', file.path);
+      window.history.pushState({}, '', newUrl.toString());
+
+      // Navigate within the app
+      fetchFiles(file.path);
     } else {
       openInExplorer(file.path);
     }
@@ -208,7 +207,7 @@ function App() {
 
   return (
     <div 
-        className="flex flex-col h-screen bg-surface-50 text-gray-800 font-sans selection:bg-primary-100 selection:text-primary-700"
+        className="flex flex-col h-screen bg-transparent text-gray-800 font-sans selection:bg-primary-100 selection:text-primary-700"
         onContextMenu={(e) => handleContextMenu(e, null)}
         onClick={() => setContextMenu({ x: null, y: null, file: null })} // Close menu on click
     >
@@ -220,6 +219,8 @@ function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         viewMode={viewMode}
         onToggleView={() => setViewMode(v => v === 'grid' ? 'list' : 'grid')}
+        showHidden={showHidden}
+        onToggleHidden={toggleShowHidden}
       />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar relative z-0">
@@ -243,20 +244,22 @@ function App() {
           <>
             {viewMode === 'grid' ? (
                 <FileGrid 
-                    files={files} 
+                    files={visibleFiles} 
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
+                    isHidden={isHidden}
                 />
             ) : (
                 <FileList 
-                    files={files} 
+                    files={visibleFiles} 
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     depth={depth}
+                    isHidden={isHidden}
                 />
             )}
             
-            {files.length === 0 && !loading && (
+            {visibleFiles.length === 0 && !loading && (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500 bg-white/30 backdrop-blur-sm rounded-2xl mx-8 mt-8 border border-white/20">
                     <span className="text-lg">暂无物资</span>
                 </div>
@@ -274,6 +277,7 @@ function App() {
         x={contextMenu.x} 
         y={contextMenu.y} 
         file={contextMenu.file} 
+        fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null })}
       />

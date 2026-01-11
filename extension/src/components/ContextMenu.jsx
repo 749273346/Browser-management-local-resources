@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Info, FileText, FileSpreadsheet, FileType } from 'lucide-react';
+import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType } from 'lucide-react';
 
-export default function ContextMenu({ x, y, file, onAction, onClose }) {
+export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -56,7 +56,11 @@ export default function ContextMenu({ x, y, file, onAction, onClose }) {
              <MenuItem icon={FolderOpen} label="打开 (Open)" onClick={() => onAction('open', file)} />
           )}
           <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />
-          <MenuItem icon={EyeOff} label="停运/隐藏 (Ignore)" onClick={() => onAction('hide', file)} />
+          <MenuItem 
+            icon={fileHidden ? Eye : EyeOff} 
+            label={fileHidden ? "取消停运 (Restore)" : "停运/隐藏 (Ignore)"} 
+            onClick={() => onAction('hide', file)} 
+          />
           <MenuItem icon={Info} label="属性 (Properties)" onClick={() => onAction('properties', file)} />
           <Separator />
           <MenuItem icon={Trash2} label="删除 (Delete)" onClick={() => onAction('delete', file)} danger />
@@ -66,7 +70,6 @@ export default function ContextMenu({ x, y, file, onAction, onClose }) {
         <>
           <MenuHeader title="新建 (New)" />
           <MenuItem icon={FolderPlus} label="文件夹 (Folder)" onClick={() => onAction('new-folder')} />
-          <MenuItem icon={FileText} label="文本文件 (.txt)" onClick={() => onAction('new-file-txt')} />
           <MenuItem icon={FileType} label="Word 文档 (.docx)" onClick={() => onAction('new-file-docx')} />
           <MenuItem icon={FileSpreadsheet} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx')} />
           <MenuItem icon={FilePlus} label="PPT 演示文稿 (.pptx)" onClick={() => onAction('new-file-pptx')} />

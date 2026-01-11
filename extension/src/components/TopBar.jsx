@@ -1,7 +1,7 @@
-import { Home, Settings, Train, Palette, ChevronRight, LayoutGrid, List } from 'lucide-react';
+import { Home, Settings, Train, Palette, ChevronRight, LayoutGrid, List, Eye, EyeOff } from 'lucide-react';
 import { applyTheme } from '../theme';
 
-export default function TopBar({ currentPath, onNavigate, onReset, depth, onOpenSettings, viewMode, onToggleView }) {
+export default function TopBar({ currentPath, onNavigate, onReset, depth, onOpenSettings, viewMode, onToggleView, showHidden, onToggleHidden }) {
   // Normalize path to use forward slashes for easier splitting, but keep track of original separator if possible
   // Actually, for display, just splitting by either is fine.
   const parts = currentPath ? currentPath.split(/[\\/]/).filter(Boolean) : [];
@@ -78,6 +78,14 @@ export default function TopBar({ currentPath, onNavigate, onReset, depth, onOpen
 
       {/* Actions */}
       <div className="flex items-center space-x-2">
+        <button
+            onClick={onToggleHidden}
+            className={`p-2 rounded-full transition-colors ${showHidden ? 'text-primary-600 bg-primary-50' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'}`}
+            title={showHidden ? '隐藏停运物资' : '显示停运物资'}
+        >
+            {showHidden ? <Eye size={20} /> : <EyeOff size={20} />}
+        </button>
+
         <button
             onClick={onToggleView}
             className="p-2 text-gray-600 hover:text-primary-700 hover:bg-white/50 rounded-full transition-colors"

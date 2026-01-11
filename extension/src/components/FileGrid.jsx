@@ -1,5 +1,4 @@
-import { Folder, File, FileImage, FileText, FileCode, EyeOff, Eye } from 'lucide-react';
-import { useHiddenFiles } from '../hooks/useHiddenFiles';
+import { Folder, File, FileImage, FileText, FileCode, EyeOff } from 'lucide-react';
 
 const getFileIcon = (name, isDirectory) => {
     // Railway themed folder icon logic could go here later
@@ -26,27 +25,12 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function FileGrid({ files, onNavigate, onContextMenu }) {
-  const { isHidden, toggleShowHidden, showHidden } = useHiddenFiles();
-
-  // Filter files based on hidden state
-  const displayedFiles = files.filter(file => showHidden || !isHidden(file.path));
-
+export default function FileGrid({ files, onNavigate, onContextMenu, isHidden }) {
   return (
     <div className="flex flex-col h-full">
-        <div className="flex justify-end px-6 pt-2">
-            <button 
-                onClick={toggleShowHidden}
-                className="text-xs flex items-center text-gray-400 hover:text-primary-600 transition-colors"
-            >
-                {showHidden ? <Eye size={14} className="mr-1"/> : <EyeOff size={14} className="mr-1"/>}
-                {showHidden ? '隐藏停运物资' : '显示停运物资'}
-            </button>
-        </div>
-        
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 p-6">
-        {displayedFiles.map((file, i) => {
-            const hidden = isHidden(file.path);
+        {files.map((file, i) => {
+            const hidden = isHidden ? isHidden(file.path) : false;
             return (
                 <div 
                 key={i}

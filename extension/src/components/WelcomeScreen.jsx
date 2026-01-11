@@ -10,13 +10,22 @@ export default function WelcomeScreen({ onComplete }) {
       try {
           const res = await fetch('http://localhost:3001/api/pick-folder', { method: 'POST' });
           const data = await res.json();
+          
+          if (!res.ok) {
+            throw new Error(data.error || 'Server error');
+          }
+
           if (data.path) {
               setPath(data.path);
               setError('');
           }
       } catch (err) {
           console.error('Failed to pick folder:', err);
-          setError('无法调用文件夹选择器 (Could not open picker)');
+          if (err.message === 'Failed to fetch') {
+             setError('无法连接到后台服务，请确保 server 正在运行 (Server not reachable)');
+          } else {
+             setError(`无法调用文件夹选择器: ${err.message}`);
+          }
       }
   };
 
