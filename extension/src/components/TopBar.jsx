@@ -92,7 +92,7 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
       {/* Actions */}
       <div className="flex items-center space-x-2">
         <div className="mr-2">
-            <SearchBar currentPath={currentPath} />
+            <SearchBar currentPath={currentPath} onNavigate={onNavigate} />
         </div>
 
         <Button

@@ -3,17 +3,34 @@ const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
 
-const gotTheLock = app.requestSingleInstanceLock();
-
-if (!gotTheLock) {
-  app.quit();
-  return;
-}
-
 let mainWindow;
 let tray;
 
 app.setAppUserModelId('com.qc.localresourcemanager');
+
+try {
+  const userDataPath = path.join(app.getPath('appData'), 'LocalResourceManager', 'electron');
+  app.setPath('userData', userDataPath);
+} catch (err) {
+  try {
+    logger.warn('Failed to set userData', err);
+  } catch {}
+}
+
+try {
+  logger.info('Main starting', { cwd: process.cwd(), userData: app.getPath('userData') });
+} catch {}
+
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  try {
+    logger.warn('Single instance lock failed; quitting');
+  } catch {}
+  // Exit with 202 to indicate to the wrapper script that an instance is already running
+  app.exit(202);
+  return;
+}
 
 function requestExit(code) {
   try {
@@ -52,6 +69,7 @@ function createWindow() {
     height: 600,
     show: false,
     frame: true,
+    autoHideMenuBar: true,
     title: '浏览器资源管理 - 服务控制台',
     icon: getIconPath(),
     webPreferences: {
@@ -59,6 +77,9 @@ function createWindow() {
       contextIsolation: false
     }
   });
+
+  // Explicitly remove menu bar to ensure it's hidden
+  mainWindow.setMenu(null);
 
   mainWindow.loadFile(path.join(__dirname, 'public/dashboard.html'));
 
@@ -76,10 +97,26 @@ function createWindow() {
   });
 }
 
+function showMainWindow() {
+  try {
+    if (!mainWindow) {
+      createWindow();
+    }
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  } catch (err) {
+    try {
+      logger.error('Failed to show main window', err);
+    } catch {}
+  }
+}
+
 function getIconPath() {
   const possiblePaths = [
     path.join(__dirname, 'assets/icon16.png'),
     path.join(__dirname, 'assets/icon.png'),
+    path.join(__dirname, '../extension/public/icon.svg'),
     path.join(__dirname, '../extension/public/icon.png'),
     path.join(__dirname, '../extension/dist/icon.png')
   ];
@@ -130,8 +167,7 @@ function createTray() {
     { 
       label: '打开控制台', 
       click: () => {
-        mainWindow.show();
-        mainWindow.focus();
+        showMainWindow();
       } 
     },
     { type: 'separator' },
@@ -152,13 +188,11 @@ function createTray() {
   tray.setContextMenu(contextMenu);
 
   tray.on('double-click', () => {
-    mainWindow.show();
-    mainWindow.focus();
+    showMainWindow();
   });
   
   tray.on('click', () => {
-    mainWindow.show();
-    mainWindow.focus();
+    showMainWindow();
   });
 }
 
@@ -187,7 +221,21 @@ app.whenReady().then(() => {
   });
   
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    if (mainWindow) {
+    // Log the attempt for debugging
+    try {
+      logger.info('Second instance detected', { commandLine, workingDirectory });
+    } catch {}
+
+    // Only show window if explicitly requested via --open flag
+    // This prevents auto-popup when extensions or scripts try to restart the service silently (or without args)
+    const shouldShow = commandLine.some(arg => 
+      arg.includes('--show') || 
+      arg.includes('--open') ||
+      arg.includes('/show') || 
+      arg.includes('/open')
+    );
+
+    if (mainWindow && shouldShow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.show();
       mainWindow.focus();

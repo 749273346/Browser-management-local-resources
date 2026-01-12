@@ -191,10 +191,11 @@ app.post('/api/open', (req, res) => {
 
     logger.info(`Opening: ${targetPath}`);
 
-    // Use 'explorer' command on Windows
+    // Use 'start' command on Windows with /MAX to open maximized and bring to front
     // standardizing path separators
     const cleanPath = path.normalize(targetPath);
-    const command = `explorer "${cleanPath}"`;
+    // start "" /MAX "path" - empty string is title, required when path is quoted
+    const command = `start "" /MAX "${cleanPath}"`;
     
     exec(command, (error) => {
         if (error) {
@@ -317,6 +318,33 @@ app.post('/api/delete', async (req, res) => {
         } else {
             await fs.unlink(targetPath);
         }
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+// Settings API
+const settingsPath = path.join(__dirname, 'settings.json');
+
+app.get('/api/settings', async (req, res) => {
+    try {
+        const data = await fs.readFile(settingsPath, 'utf8');
+        res.json(JSON.parse(data));
+    } catch (error) {
+        if (error.code === 'ENOENT') {
+            res.json({}); // Return empty object if no settings file
+        } else {
+            res.status(500).json({ error: error.message });
+        }
+    }
+});
+
+app.post('/api/settings', async (req, res) => {
+    try {
+        const settings = req.body;
+        await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });

@@ -54,6 +54,85 @@ const sanitizeFolderColors = (raw, rootKey = getRootKey()) => {
 }
 
 function App() {
+  const SERVER_URL = 'http://localhost:3001';
+
+  const updateServerSettings = async () => {
+      try {
+          const settings = {
+              rootPath: localStorage.getItem('rootPath'),
+              folderColors: JSON.parse(localStorage.getItem('folderColors') || '{}'),
+              folderViewModes: JSON.parse(localStorage.getItem('folderViewModes') || '{}'),
+              appTheme: localStorage.getItem('appTheme'),
+              colorMode: localStorage.getItem('colorMode'),
+              bgImage: localStorage.getItem('bgImage'),
+              glassOpacity: localStorage.getItem('glassOpacity'),
+              glassBlur: localStorage.getItem('glassBlur')
+          };
+          await fetch(`${SERVER_URL}/api/settings`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(settings)
+          });
+      } catch (e) {
+          console.error('Failed to save settings:', e);
+      }
+  };
+
+  // Sync from server on load
+  useEffect(() => {
+      const loadSettings = async () => {
+          try {
+              const res = await fetch(`${SERVER_URL}/api/settings`);
+              if (res.ok) {
+                  const settings = await res.json();
+                  // If server has no settings but local has, push local to server
+                  if (Object.keys(settings).length === 0) {
+                      if (localStorage.getItem('rootPath')) {
+                          console.log('Server settings empty, pushing local settings...');
+                          await updateServerSettings();
+                      }
+                      return;
+                  }
+
+                  let changed = false;
+                  
+                  if (settings.rootPath && settings.rootPath !== localStorage.getItem('rootPath')) {
+                      localStorage.setItem('rootPath', settings.rootPath);
+                      setPath(settings.rootPath);
+                      changed = true;
+                  }
+                  
+                  const keys = ['folderColors', 'folderViewModes', 'appTheme', 'colorMode', 'bgImage', 'glassOpacity', 'glassBlur'];
+                  keys.forEach(key => {
+                      if (settings[key]) {
+                          const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key]) : settings[key];
+                          if (val !== localStorage.getItem(key)) {
+                              localStorage.setItem(key, val);
+                              changed = true;
+                          }
+                      }
+                  });
+
+                  if (changed) {
+                      setFolderColors(sanitizeFolderColors(settings.folderColors));
+                      setFolderViewModes(settings.folderViewModes || {});
+                      if (settings.appTheme) applyTheme(settings.appTheme);
+                      if (settings.colorMode) applyColorMode(settings.colorMode);
+                      
+                      // Update CSS variables for visual settings
+                      const root = document.documentElement;
+                      if (settings.bgImage) root.style.setProperty('--bg-image', `url("${settings.bgImage}")`);
+                      if (settings.glassOpacity) root.style.setProperty('--glass-opacity', settings.glassOpacity);
+                      if (settings.glassBlur) root.style.setProperty('--glass-blur', `${settings.glassBlur}px`);
+                  }
+              }
+          } catch (e) {
+              console.error('Failed to load settings:', e);
+          }
+      };
+      loadSettings();
+  }, []);
+
   const { 
     files, 
     currentPath, 
@@ -97,7 +176,14 @@ function App() {
   const getInitialPath = () => {
     const params = new URLSearchParams(window.location.search);
     const pathFromUrl = params.get('path');
-    if (pathFromUrl) return pathFromUrl;
+    if (pathFromUrl) {
+      // If opened with a specific path (e.g. from Dashboard), set it as root if missing
+      // This ensures isRoot logic works correctly and skips WelcomeScreen
+      if (!localStorage.getItem('rootPath')) {
+        localStorage.setItem('rootPath', pathFromUrl);
+      }
+      return pathFromUrl;
+    }
     
     return localStorage.getItem('rootPath') || '';
   };
@@ -224,6 +310,7 @@ function App() {
           });
           if (changed) {
               localStorage.setItem('folderColors', JSON.stringify(next));
+              updateServerSettings();
               return next;
           }
           return prev;

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { 
     Search, X, Folder, File, FileText, FileSpreadsheet, 
-    FileImage, Film, Music, Clock, Loader2, ExternalLink, ArrowRight 
+    FileImage, Film, Music, Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -14,6 +14,8 @@ const CATEGORIES = [
 ];
 
 const MAX_HISTORY = 5;
+
+const nameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 // Helper to get icon
 const getFileIcon = (name, isDirectory) => {
@@ -66,10 +68,12 @@ const HighlightedText = ({ text, highlight }) => {
     }
 };
 
-export default function SearchBar({ currentPath }) {
+export default function SearchBar({ currentPath, onNavigate }) {
     const [isActive, setIsActive] = useState(false);
     const [query, setQuery] = useState('');
     const [category, setCategory] = useState('all');
+    const [scope, setScope] = useState('local'); // global | local
+    const [sortDirection, setSortDirection] = useState('asc');
     const [results, setResults] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [history, setHistory] = useState([]);
@@ -103,7 +107,7 @@ export default function SearchBar({ currentPath }) {
     }, []);
 
     // Search function
-    const performSearch = useCallback(async (searchQuery, searchCategory) => {
+    const performSearch = useCallback(async (searchQuery, searchCategory, searchScope) => {
         if (!searchQuery.trim()) {
             setResults([]);
             return;
@@ -111,15 +115,13 @@ export default function SearchBar({ currentPath }) {
 
         setIsLoading(true);
         try {
-            // Use current path as root, or default to C:\ if not available?
-            // Actually, global search is better if we want to find things effectively.
-            // But 'currentPath' prop suggests contextual search.
-            // Let's use 'currentPath' as root if it's available, otherwise C:\
-            const root = currentPath || 'C:\\';
+            // Determine search root based on scope
+            const rootPath = localStorage.getItem('rootPath') || 'C:\\';
+            const searchRoot = searchScope === 'local' ? (currentPath || rootPath) : rootPath;
             
             const params = new URLSearchParams({
                 query: searchQuery,
-                path: root,
+                path: searchRoot,
                 type: searchCategory
             });
 
@@ -140,7 +142,7 @@ export default function SearchBar({ currentPath }) {
 
         if (query) {
             debounceRef.current = setTimeout(() => {
-                performSearch(query, category);
+                performSearch(query, category, scope);
             }, 300);
         } else {
             setResults([]);
@@ -148,7 +150,24 @@ export default function SearchBar({ currentPath }) {
         }
 
         return () => clearTimeout(debounceRef.current);
-    }, [query, category, performSearch]);
+    }, [query, category, scope, performSearch]);
+
+    const displayResults = useMemo(() => {
+        if (!results?.length) return [];
+
+        const sorted = [...results].sort((a, b) => {
+            if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+            const nameCmp = nameCollator.compare(a.name, b.name);
+            if (nameCmp !== 0) return nameCmp;
+            return nameCollator.compare(a.path, b.path);
+        });
+
+        return sortDirection === 'asc' ? sorted : sorted.reverse();
+    }, [results, sortDirection]);
+
+    useEffect(() => {
+        setActiveIndex(-1);
+    }, [query, category, sortDirection, results]);
 
     const addToHistory = (text) => {
         const newHistory = [text, ...history.filter(h => h !== text)].slice(0, MAX_HISTORY);
@@ -159,31 +178,54 @@ export default function SearchBar({ currentPath }) {
     const handleOpen = async (item) => {
         addToHistory(query);
         
-        try {
-            await fetch('http://localhost:3001/api/open', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: item.path })
-            });
-            setIsActive(false);
-        } catch (e) {
-            console.error('Failed to open:', e);
+        if (item.isDirectory) {
+            // If it's a directory and we have a navigation handler, use it
+            if (onNavigate) {
+                onNavigate(item.path);
+                setIsActive(false);
+                setQuery('');
+                setResults([]);
+            } else {
+                // Fallback to opening in explorer if no navigation handler
+                try {
+                    await fetch('http://localhost:3001/api/open', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ path: item.path })
+                    });
+                    setIsActive(false);
+                } catch (e) {
+                    console.error('Failed to open:', e);
+                }
+            }
+        } else {
+            // It's a file, open it
+            try {
+                await fetch('http://localhost:3001/api/open', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ path: item.path })
+                });
+                setIsActive(false);
+            } catch (e) {
+                console.error('Failed to open:', e);
+            }
         }
     };
 
     const handleKeyDown = (e) => {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActiveIndex(prev => Math.min(prev + 1, results.length - 1));
+            setActiveIndex(prev => Math.min(prev + 1, displayResults.length - 1));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setActiveIndex(prev => Math.max(prev - 1, -1));
         } else if (e.key === 'Enter') {
             e.preventDefault();
-            if (activeIndex >= 0 && results[activeIndex]) {
-                handleOpen(results[activeIndex]);
-            } else if (results.length > 0) {
-                handleOpen(results[0]);
+            if (activeIndex >= 0 && displayResults[activeIndex]) {
+                handleOpen(displayResults[activeIndex]);
+            } else if (displayResults.length > 0) {
+                handleOpen(displayResults[0]);
             }
         } else if (e.key === 'Escape') {
             setIsActive(false);
@@ -202,7 +244,7 @@ export default function SearchBar({ currentPath }) {
             {/* Search Input */}
             <div className={`
                 flex items-center transition-all duration-300 ease-in-out
-                ${isActive ? 'w-80 md:w-96 bg-white dark:bg-slate-800 ring-2 ring-primary-500/50' : 'w-48 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60'}
+                ${isActive ? 'w-[480px] bg-white dark:bg-slate-800 ring-2 ring-primary-500/50' : 'w-48 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60'}
                 backdrop-blur-md rounded-full border border-white/20 dark:border-white/10 shadow-sm
             `}>
                 <Search size={18} className="ml-3 text-gray-500 dark:text-slate-400 flex-shrink-0" />
@@ -231,21 +273,55 @@ export default function SearchBar({ currentPath }) {
                 <div className="absolute top-full right-0 mt-2 w-[480px] bg-white/90 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/20 dark:border-white/10 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 origin-top-right">
                     
                     {/* Categories */}
-                    <div className="flex px-2 py-2 border-b border-gray-100 dark:border-slate-800 space-x-1 overflow-x-auto scrollbar-hide">
-                        {CATEGORIES.map(cat => (
+                    <div className="flex items-center px-2 py-2 border-b border-gray-100 dark:border-slate-800">
+                        {/* Scope Toggle */}
+                        <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-0.5 mr-2 flex-shrink-0">
                             <button
-                                key={cat.id}
-                                onClick={() => { setCategory(cat.id); inputRef.current?.focus(); }}
-                                className={`
-                                    px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors
-                                    ${category === cat.id 
-                                        ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300' 
-                                        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}
-                                `}
+                                onClick={() => { setScope('global'); inputRef.current?.focus(); }}
+                                className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${scope === 'global' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
                             >
-                                {cat.label}
+                                全局
                             </button>
-                        ))}
+                            <button
+                                onClick={() => { setScope('local'); inputRef.current?.focus(); }}
+                                className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${scope === 'local' ? 'bg-white dark:bg-slate-700 shadow-sm text-primary-600 dark:text-primary-300' : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'}`}
+                            >
+                                当前
+                            </button>
+                        </div>
+                        <div className="h-4 w-px bg-gray-200 dark:bg-slate-700 mx-1 flex-shrink-0"></div>
+                        <div className="flex flex-1 space-x-1 overflow-x-auto scrollbar-hide">
+                            {CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => { setCategory(cat.id); inputRef.current?.focus(); }}
+                                    className={`
+                                        px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors
+                                        ${category === cat.id 
+                                            ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300' 
+                                            : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800'}
+                                    `}
+                                >
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            type="button"
+                            title={sortDirection === 'asc' ? '按名称升序' : '按名称降序'}
+                            aria-label={sortDirection === 'asc' ? '按名称升序' : '按名称降序'}
+                            onClick={() => {
+                                setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+                                inputRef.current?.focus();
+                            }}
+                            className="ml-2 p-2 rounded-lg text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors flex-shrink-0"
+                        >
+                            {sortDirection === 'asc' ? (
+                                <ArrowUp size={16} className="text-gray-500 dark:text-slate-400" />
+                            ) : (
+                                <ArrowDown size={16} className="text-gray-500 dark:text-slate-400" />
+                            )}
+                        </button>
                     </div>
 
                     {/* Content Area */}
@@ -256,12 +332,12 @@ export default function SearchBar({ currentPath }) {
                                 <span className="text-sm">正在搜索...</span>
                             </div>
                         ) : query ? (
-                            results.length > 0 ? (
+                            displayResults.length > 0 ? (
                                 <div className="py-2">
                                     <div className="px-4 py-1 text-xs font-medium text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-1">
-                                        搜索结果 ({results.length})
+                                        搜索结果 ({displayResults.length})
                                     </div>
-                                    {results.map((item, index) => (
+                                    {displayResults.map((item, index) => (
                                         <div
                                             key={item.path}
                                             onClick={() => handleOpen(item)}

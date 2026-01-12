@@ -8,17 +8,26 @@ set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
 set "STARTUP_LNK=%STARTUP_DIR%\LocalResourceManager.lnk"
 set "VBS=%ROOT%start-server-hidden.vbs"
 set "WSCRIPT=%SystemRoot%\System32\wscript.exe"
+set "HEALTH_URL=http://127.0.0.1:3001/health"
 
 if /i "%~1"=="/silent" (
   call :EnsureStartup
-  %WSCRIPT% //B //NoLogo "%VBS%" /silent
+  call :StartDetached
+  call :WaitForHealth
+  if errorlevel 1 exit /b 1
   exit /b 0
 )
 
 if exist "%MARKER%" (
   call :EnsureStartup
-  echo 已完成服务配置。
-  echo 如需重新安装，请删除：%MARKER%
+  echo [信息] 正在尝试启动/激活服务...
+  call :StartDetached
+  call :WaitForHealth
+  if errorlevel 1 goto :HealthFail
+  echo.
+  echo 服务已在后台运行（请检查右下角托盘图标）。
+  echo 如需重新安装依赖，请删除：%MARKER%
+  echo.
   echo 按任意键退出...
   pause >nul
   exit /b 0
@@ -57,7 +66,10 @@ echo [信息] 正在配置开机自启（不会弹窗）...
 call :EnsureStartup
 
 echo [信息] 正在启动系统托盘服务...
-%WSCRIPT% //B //NoLogo "%VBS%" /silent
+call :StartDetached
+
+call :WaitForHealth
+if errorlevel 1 goto :HealthFail
 
 > "%MARKER%" echo electron_ready
 
@@ -77,12 +89,48 @@ echo 按任意键退出...
 pause >nul
 exit /b 0
 
+:WaitForHealth
+set "HEALTH_OK=0"
+for /L %%i in (1,1,12) do (
+  "%SystemRoot%\System32\curl.exe" -s -m 2 -o nul -f "%HEALTH_URL%" >nul 2>&1
+  if !errorlevel! equ 0 (
+    set "HEALTH_OK=1"
+    goto :WaitForHealthDone
+  )
+  timeout /t 1 >nul
+)
+:WaitForHealthDone
+if "%HEALTH_OK%"=="1" (exit /b 0) else (exit /b 1)
+
+:HealthFail
+echo.
+echo ===================================================
+echo    启动失败：未检测到后端服务
+echo ===================================================
+echo 1. 可能原因：Electron 启动被安全软件拦截，或服务立即崩溃。
+echo 2. 请查看日志目录：
+echo    %APPDATA%\LocalResourceManager\logs
+echo 3. 如需手动验证，可在以下目录执行：
+echo    %ROOT%server
+echo    npm run app
+echo.
+echo 按任意键退出...
+pause >nul
+exit /b 1
+
+:StartDetached
+if exist "%STARTUP_LNK%" (
+  "%SystemRoot%\System32\rundll32.exe" shell32.dll,ShellExec_RunDLL "%STARTUP_LNK%" >nul 2>&1
+  exit /b 0
+)
+start "" "%WSCRIPT%" //B //NoLogo "%VBS%" /silent
+exit /b 0
+
 :EnsureStartup
 if not exist "%STARTUP_DIR%" (
   mkdir "%STARTUP_DIR%" >nul 2>&1
 )
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "LocalResourceManager" /t REG_SZ /d "\"%WSCRIPT%\" //B //NoLogo \"%VBS%\" /silent" /f >nul 2>&1
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%STARTUP_LNK%'); $s.TargetPath = '%WSCRIPT%'; $s.Arguments = ('//B //NoLogo ""{0}"" /silent' -f '%VBS%'); $s.WorkingDirectory = '%ROOT%'; $s.Description = 'Local Resource Manager Background Service'; $s.Save()" >nul 2>&1
+"%WSCRIPT%" //B //NoLogo "%VBS%" /installstartup >nul 2>&1
 del /f /q "%STARTUP_DIR%\start-background.bat" >nul 2>&1
 del /f /q "%STARTUP_DIR%\start-background.lnk" >nul 2>&1
 del /f /q "%STARTUP_DIR%\LocalResourceManagerSetup.lnk" >nul 2>&1
