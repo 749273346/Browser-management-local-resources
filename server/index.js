@@ -10,6 +10,10 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+// Serve static files from the extension build directory
+const extensionDistPath = path.join(__dirname, '../extension/dist');
+app.use(express.static(extensionDistPath));
+
 // Recursive function to get files
 const getFilesRecursive = async (dir, currentDepth, maxDepth) => {
     if (currentDepth > maxDepth) return [];
@@ -219,6 +223,18 @@ app.post('/api/delete', async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+let server;
+
+const start = (port = PORT) => {
+    if (server) return server;
+    server = app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
+    return server;
+};
+
+module.exports = { start, app, PORT };
+
+if (require.main === module) {
+    start();
+}

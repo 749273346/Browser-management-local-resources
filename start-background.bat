@@ -1,120 +1,135 @@
 @echo off
+chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-echo ===================================================
-echo    Local Resource Manager - Auto Setup
-echo ===================================================
+set "ROOT=%~dp0"
+set "MARKER=%ROOT%.lrm_electron_ready"
+set "STARTUP_DIR=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup"
+set "STARTUP_LNK=%STARTUP_DIR%\LocalResourceManager.lnk"
+set "VBS=%ROOT%start-server-hidden.vbs"
+set "WSCRIPT=%SystemRoot%\System32\wscript.exe"
 
-:: 1. Check for Node.js
-echo [CHECK] Checking system environment...
+if /i "%~1"=="/silent" (
+  call :EnsureStartup
+  %WSCRIPT% //B //NoLogo "%VBS%" /silent
+  exit /b 0
+)
+
+if exist "%MARKER%" (
+  call :EnsureStartup
+  echo 已完成服务配置。
+  echo 如需重新安装，请删除：%MARKER%
+  echo 按任意键退出...
+  pause >nul
+  exit /b 0
+)
+
+title 浏览器资源管理插件 - 服务升级配置 (Local Resource Manager Setup)
+
+echo ===================================================
+echo    浏览器资源管理插件 - 服务升级配置
+echo ===================================================
+echo.
+
+echo [检查] 正在检测系统环境...
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [INFO] Node.js environment not found.
-    echo [INFO] Starting automatic installation...
-    goto :InstallNode
+  echo [提示] 未检测到 Node.js，开始自动安装...
+  goto :InstallNode
 ) else (
-    echo [INFO] Node.js is ready.
+  echo [成功] Node.js 环境已就绪。
 )
 
 :CheckDependencies
-:: 2. Check and Install Dependencies
-if not exist "%~dp0server\node_modules" (
-    echo [INFO] Installing server dependencies (First run only)...
-    cd /d "%~dp0server"
-    call npm install
-    if !errorlevel! neq 0 (
-        echo [ERROR] Failed to install dependencies.
-        pause
-        exit /b
-    )
-    cd /d "%~dp0"
-    echo [INFO] Dependencies ready.
+if not exist "%ROOT%server\node_modules\electron" (
+  echo [信息] 正在安装/升级服务依赖（Electron）...
+  echo [提示] 这可能需要几分钟，取决于网络状况...
+  pushd "%ROOT%server"
+  call npm install
+  if !errorlevel! neq 0 (
+    popd
+    goto :ErrorExit
+  )
+  popd
 )
 
-:: 3. Setup Auto-Start (Startup Folder Shortcut)
-echo [INFO] Configuring auto-start on boot...
-set "SHORTCUT_PATH=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\LocalResourceManager.lnk"
-set "TARGET_PATH=%~dp0start-server-hidden.vbs"
-set "WORK_DIR=%~dp0"
+echo [信息] 正在配置开机自启（不会弹窗）...
+call :EnsureStartup
 
-:: Use PowerShell to create the shortcut
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%SHORTCUT_PATH%'); $s.TargetPath = '%TARGET_PATH%'; $s.WorkingDirectory = '%WORK_DIR%'; $s.Description = 'Local Resource Manager Background Service'; $s.Save()"
+echo [信息] 正在启动系统托盘服务...
+%WSCRIPT% //B //NoLogo "%VBS%" /silent
 
-if exist "%SHORTCUT_PATH%" (
-    echo [SUCCESS] Auto-start configured successfully.
-) else (
-    echo [WARN] Could not create auto-start shortcut. You may need to run this script manually after reboot.
-)
-
-:: 4. Start Server Now
-echo [INFO] Starting background service...
-cscript //nologo "%~dp0start-server-hidden.vbs"
+> "%MARKER%" echo electron_ready
 
 echo.
 echo ===================================================
-echo    All Systems Go!
+echo    配置完成！
 echo ===================================================
 echo.
-echo 1. The service is running in the background.
-echo 2. It will start automatically when you restart the computer.
-echo 3. You can close this window now.
+echo 1. 服务已升级为系统托盘模式（右下角图标）。
+echo 2. 点击托盘图标可打开管理控制台。
+echo 3. 开机自启已配置。
 echo.
-echo [Action Required] Load the extension in your browser:
-echo    path: %~dp0extension
+echo [后续操作] 请在浏览器扩展管理页面加载以下目录（如未加载）：
+echo    %ROOT%extension
 echo.
-pause
-exit /b
+echo 按任意键退出...
+pause >nul
+exit /b 0
+
+:EnsureStartup
+if not exist "%STARTUP_DIR%" (
+  mkdir "%STARTUP_DIR%" >nul 2>&1
+)
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%STARTUP_LNK%'); $s.TargetPath = '%WSCRIPT%'; $s.Arguments = '//B //NoLogo ""%VBS%"" /silent'; $s.WorkingDirectory = '%ROOT%'; $s.Description = 'Local Resource Manager Background Service'; $s.Save()"
+del /f /q "%STARTUP_DIR%\start-background.bat" >nul 2>&1
+del /f /q "%STARTUP_DIR%\start-background.lnk" >nul 2>&1
+del /f /q "%STARTUP_DIR%\LocalResourceManagerSetup.lnk" >nul 2>&1
+del /f /q "%STARTUP_DIR%\start-server-hidden.vbs" >nul 2>&1
+del /f /q "%STARTUP_DIR%\LocalResourceManagerServer.lnk" >nul 2>&1
+del /f /q "%STARTUP_DIR%\Local Resource Manager Server.lnk" >nul 2>&1
+exit /b 0
 
 :InstallNode
-echo.
-:: Check for local installer first (Offline Mode)
-set "localInstaller=%~dp0resources\node-v18-x64.msi"
-if exist "!localInstaller!" (
-    echo [INFO] Found offline installer. Installing...
-    set "nodeFile=!localInstaller!"
-    goto :RunInstaller
+set "LOCAL_INSTALLER=%ROOT%resources\node-v18-x64.msi"
+if exist "%LOCAL_INSTALLER%" (
+  set "NODE_MSI=%LOCAL_INSTALLER%"
+  goto :RunInstaller
 )
 
-:: Online Mode
-echo [INFO] Offline installer not found. Checking network...
-echo [INFO] Detecting system architecture...
+echo [信息] 未找到离线安装包，尝试在线下载...
 if "%PROCESSOR_ARCHITECTURE%"=="AMD64" (
-    set "nodeUrl=https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi"
-    set "nodeFile=node-install.msi"
+  set "NODE_URL=https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi"
 ) else (
-    set "nodeUrl=https://nodejs.org/dist/v18.17.1/node-v18.17.1-x86.msi"
-    set "nodeFile=node-install.msi"
+  set "NODE_URL=https://nodejs.org/dist/v18.17.1/node-v18.17.1-x86.msi"
 )
-
-echo [INFO] Downloading Node.js...
-powershell -Command "try { Invoke-WebRequest -Uri '%nodeUrl%' -OutFile '%nodeFile%' -ErrorAction Stop } catch { exit 1 }"
-
-if %errorlevel% neq 0 (
-    echo [ERROR] Download failed. No internet and no offline installer.
-    echo Please put 'node-v18-x64.msi' in 'resources' folder or connect to internet.
-    pause
-    exit /b
-)
+set "NODE_MSI=%TEMP%\node-install.msi"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "try { Invoke-WebRequest -Uri '%NODE_URL%' -OutFile '%NODE_MSI%' -ErrorAction Stop } catch { exit 1 }"
+if %errorlevel% neq 0 goto :ErrorExit
 
 :RunInstaller
-echo [INFO] Installing Node.js (Please wait)...
-:: /qb means basic UI (progress bar), /norestart suppresses reboot prompt
-msiexec /i "%nodeFile%" /qb /norestart
+echo [信息] 正在安装 Node.js（请稍候）...
+msiexec /i "%NODE_MSI%" /qb /norestart
+if /i not "%NODE_MSI%"=="%LOCAL_INSTALLER%" del "%NODE_MSI%" >nul 2>&1
 
-echo.
-if not "%nodeFile%"=="!localInstaller!" (
-    del "%nodeFile%" >nul 2>&1
-)
-
-echo [INFO] Verifying installation...
-:: Attempt to refresh environment by restarting the script if Node is still not found
 where node >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [INFO] Environment update pending. Restarting setup script...
-    timeout /t 2 >nul
-    start "" "%~f0"
-    exit /b
-) else (
-    echo [SUCCESS] Node.js installed. Proceeding...
-    goto :CheckDependencies
+  echo [提示] Node.js 已安装，但当前窗口未刷新环境变量。
+  echo [提示] 正在自动重启脚本，请稍候...
+  timeout /t 2 >nul
+  start "" "%~f0"
+  exit /b
 )
+goto :CheckDependencies
+
+:ErrorExit
+echo.
+echo ===================================================
+echo    准备失败
+echo ===================================================
+echo 可能原因：网络不可用、权限不足、或安装被安全软件拦截。
+echo 请截图此窗口并联系技术人员。
+echo.
+echo 按任意键退出...
+pause >nul
+exit /b 1
