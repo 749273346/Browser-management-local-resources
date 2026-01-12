@@ -1,5 +1,6 @@
 import { Settings, Train, ChevronRight, LayoutGrid, List, Eye, EyeOff, Kanban } from 'lucide-react';
 import Button from './Button';
+import SearchBar from './SearchBar';
 
 export default function TopBar({ currentPath, onNavigate, onReset, onOpenSettings, viewMode, onToggleView, showHidden, onToggleHidden }) {
   // Normalize path to use forward slashes for easier splitting, but keep track of original separator if possible
@@ -90,6 +91,10 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
 
       {/* Actions */}
       <div className="flex items-center space-x-2">
+        <div className="mr-2">
+            <SearchBar currentPath={currentPath} />
+        </div>
+
         <Button
             onClick={onToggleHidden}
             variant={showHidden ? 'active' : 'secondary'}

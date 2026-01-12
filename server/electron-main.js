@@ -1,6 +1,7 @@
 const { app, BrowserWindow, Tray, Menu, shell, nativeImage, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
+const logger = require('./logger');
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -14,13 +15,35 @@ let tray;
 
 app.setAppUserModelId('com.qc.localresourcemanager');
 
+function requestExit(code) {
+  try {
+    logger.warn('App exit requested', { code });
+  } catch {}
+  try {
+    app.isQuiting = true;
+  } catch {}
+  try {
+    app.exit(code);
+  } catch {
+    try {
+      app.quit();
+    } catch {}
+  }
+}
+
+function requestRestart(reason) {
+  try {
+    logger.warn('App restart requested', { reason });
+  } catch {}
+  requestExit(102);
+}
+
 ipcMain.on('hide-window', () => {
   if (mainWindow) mainWindow.hide();
 });
 
 ipcMain.on('restart-app', () => {
-  app.relaunch();
-  app.exit();
+  requestRestart('ipc');
 });
 
 function createWindow() {
@@ -63,11 +86,11 @@ function getIconPath() {
 
   for (const p of possiblePaths) {
     if (fs.existsSync(p)) {
-      console.log('Found icon at:', p);
+      logger.info('Found icon at:', p);
       return p;
     }
   }
-  console.error('Icon not found in any of the paths:', possiblePaths);
+  logger.warn('Icon not found in any of the paths:', possiblePaths);
   return null;
 }
 
@@ -77,7 +100,7 @@ function createTray() {
   
   try {
     if (iconPath) {
-      console.log('Loading icon from:', iconPath);
+      logger.info('Loading icon from:', iconPath);
       // Read file and convert to data URL to avoid path encoding issues
       const buffer = fs.readFileSync(iconPath);
       const base64Icon = buffer.toString('base64');
@@ -85,18 +108,18 @@ function createTray() {
       const icon = nativeImage.createFromDataURL(dataUrl);
       
       if (icon.isEmpty()) {
-         console.error('Icon is empty after loading from Data URL');
+         logger.warn('Icon is empty after loading from Data URL');
          trayImage = nativeImage.createEmpty();
       } else {
          // Resize to 16x16 for best tray appearance on Windows
          trayImage = icon.resize({ width: 16, height: 16 });
       }
     } else {
-      console.warn('No icon path found, creating empty Tray');
+      logger.warn('No icon path found, creating empty Tray');
       trayImage = nativeImage.createEmpty();
     }
   } catch (err) {
-    console.error('Error creating Tray icon:', err);
+    logger.error('Error creating Tray icon:', err);
     trayImage = nativeImage.createEmpty();
   }
 
@@ -115,15 +138,13 @@ function createTray() {
     { 
       label: '重启服务', 
       click: () => {
-        app.relaunch();
-        app.exit();
+        requestRestart('tray');
       } 
     },
     { 
       label: '退出', 
       click: () => {
-        app.isQuiting = true;
-        app.quit();
+        requestExit(100);
       } 
     }
   ]);
@@ -143,17 +164,18 @@ function createTray() {
 
 function startServer() {
   try {
-    console.log('Starting Express Server...');
+    logger.info('Starting Express Server...');
     const serverModule = require('./index.js');
     if (serverModule && typeof serverModule.start === 'function') {
       serverModule.start();
     }
   } catch (err) {
-    console.error('Failed to start server:', err);
+    logger.error('Failed to start server:', err);
   }
 }
 
 app.whenReady().then(() => {
+  logger.info('App ready');
   startServer();
   createWindow();
   createTray();
@@ -173,6 +195,29 @@ app.whenReady().then(() => {
   });
 });
 
+app.on('before-quit', () => {
+  app.isQuiting = true;
+});
+
 app.on('window-all-closed', () => {
   return;
+});
+
+app.on('render-process-gone', (event, webContents, details) => {
+  logger.error('render-process-gone', details);
+  requestRestart('render-process-gone');
+});
+
+app.on('child-process-gone', (event, details) => {
+  logger.error('child-process-gone', details);
+  requestRestart('child-process-gone');
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('unhandledRejection', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error('uncaughtException', err);
+  setTimeout(() => requestExit(1), 50);
 });

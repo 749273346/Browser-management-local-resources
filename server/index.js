@@ -3,6 +3,7 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
+const logger = require('./logger');
 
 const app = express();
 const PORT = 3001;
@@ -13,6 +14,16 @@ app.use(express.json());
 // Serve static files from the extension build directory
 const extensionDistPath = path.join(__dirname, '../extension/dist');
 app.use(express.static(extensionDistPath));
+
+app.get('/health', (req, res) => {
+    res.json({
+        ok: true,
+        pid: process.pid,
+        uptimeMs: Math.floor(process.uptime() * 1000),
+        timestamp: new Date().toISOString(),
+        port: PORT
+    });
+});
 
 // Recursive function to get files
 const getFilesRecursive = async (dir, currentDepth, maxDepth) => {
@@ -60,10 +71,100 @@ const getFilesRecursive = async (dir, currentDepth, maxDepth) => {
 
         return files;
     } catch (error) {
-        console.error(`Error reading directory ${dir}:`, error);
+        logger.warn(`Error reading directory ${dir}:`, error);
         return [];
     }
 };
+
+// File Type Definitions
+const FILE_TYPES = {
+    doc: ['.txt', '.md', '.doc', '.docx', '.pdf', '.rtf', '.odt', '.ppt', '.pptx'],
+    sheet: ['.xls', '.xlsx', '.csv', '.ods'],
+    image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff'],
+    video: ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'],
+    audio: ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+};
+
+const SEARCH_LIMIT = 100; // Limit results
+const SEARCH_DEPTH = 6;   // Limit depth
+
+const searchFilesRecursive = async (dir, query, type, currentDepth, results) => {
+    if (currentDepth > SEARCH_DEPTH || results.length >= SEARCH_LIMIT) return;
+
+    try {
+        const entries = await fs.readdir(dir, { withFileTypes: true });
+        
+        for (const entry of entries) {
+            if (results.length >= SEARCH_LIMIT) break;
+
+            const fullPath = path.join(dir, entry.name);
+            const isDirectory = entry.isDirectory();
+            
+            // Skip hidden files/dirs and system dirs
+            if (entry.name.startsWith('.') || entry.name.startsWith('$') || entry.name === 'System Volume Information') continue;
+
+            const lowerName = entry.name.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            
+            // Check match
+            if (lowerName.includes(lowerQuery)) {
+                let typeMatch = true;
+                
+                if (type && type !== 'all') {
+                    if (isDirectory) {
+                        typeMatch = false; // Don't show folders when filtering by type
+                    } else {
+                        const ext = path.extname(entry.name).toLowerCase();
+                        const allowedExts = FILE_TYPES[type] || [];
+                        if (!allowedExts.includes(ext)) {
+                            typeMatch = false;
+                        }
+                    }
+                }
+
+                if (typeMatch) {
+                    results.push({
+                        name: entry.name,
+                        path: fullPath,
+                        isDirectory,
+                        // Add parent dir for display context
+                        parentPath: dir
+                    });
+                }
+            }
+
+            // Recurse
+            if (isDirectory) {
+                // If searching specific type, we still need to recurse into folders
+                await searchFilesRecursive(fullPath, query, type, currentDepth + 1, results);
+            }
+        }
+    } catch (e) {
+        // Ignore errors
+    }
+};
+
+// API to search files
+app.get('/api/search', async (req, res) => {
+    const { query, path: searchPath, type } = req.query;
+    
+    logger.info(`Search request: query="${query}", path="${searchPath}", type="${type}"`);
+
+    if (!query) return res.json({ results: [] });
+    
+    // Default to C:\ if no path, but practically frontend should send current path
+    const rootPath = searchPath || 'C:\\';
+    const results = [];
+    
+    try {
+        await searchFilesRecursive(rootPath, query, type || 'all', 1, results);
+        logger.info(`Search completed. Found ${results.length} results.`);
+        res.json({ results });
+    } catch (error) {
+        logger.error('Search error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // API to list files
 app.get('/api/files', async (req, res) => {
@@ -75,7 +176,7 @@ app.get('/api/files', async (req, res) => {
         const files = await getFilesRecursive(dirPath, 1, depth);
         res.json({ currentPath: dirPath, files });
     } catch (error) {
-        console.error('Error reading directory:', error);
+        logger.error('Error reading directory:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -88,7 +189,7 @@ app.post('/api/open', (req, res) => {
         return res.status(400).json({ error: 'Path is required' });
     }
 
-    console.log(`Opening: ${targetPath}`);
+    logger.info(`Opening: ${targetPath}`);
 
     // Use 'explorer' command on Windows
     // standardizing path separators
@@ -97,7 +198,7 @@ app.post('/api/open', (req, res) => {
     
     exec(command, (error) => {
         if (error) {
-            console.error(`exec error: ${error}`);
+            logger.error(`exec error: ${error}`);
             return res.status(500).json({ error: error.message });
         }
         res.json({ success: true, message: `Opened ${targetPath}` });
@@ -124,7 +225,7 @@ app.post('/api/pick-folder', (req, res) => {
 
     exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
         if (error) {
-            console.error(`exec error: ${error}`);
+            logger.error(`exec error: ${error}`, { stderr });
             return res.status(500).json({ error: 'Failed to open folder picker', details: error.message });
         }
         
@@ -228,7 +329,16 @@ let server;
 const start = (port = PORT) => {
     if (server) return server;
     server = app.listen(port, () => {
-        console.log(`Server running at http://localhost:${port}`);
+        logger.info(`Server running at http://localhost:${port}`);
+    });
+    server.on('error', (err) => {
+        if (err && err.code === 'EADDRINUSE') {
+            logger.warn(`Port ${port} is already in use. Assuming server already running.`);
+            server = undefined;
+            return;
+        }
+        logger.error('Server error:', err);
+        server = undefined;
     });
     return server;
 };
@@ -238,3 +348,29 @@ module.exports = { start, app, PORT };
 if (require.main === module) {
     start();
 }
+
+process.on('unhandledRejection', (reason) => {
+    logger.error('unhandledRejection', reason);
+});
+
+process.on('uncaughtException', (err) => {
+    logger.error('uncaughtException', err);
+    setTimeout(() => process.exit(1), 50);
+});
+
+function shutdown(signal) {
+    try {
+        logger.warn(`shutdown ${signal}`);
+    } catch {}
+    try {
+        if (server && typeof server.close === 'function') {
+            server.close(() => process.exit(0));
+            setTimeout(() => process.exit(0), 1500);
+            return;
+        }
+    } catch {}
+    process.exit(0);
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
