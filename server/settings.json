@@ -1,14 +1,9 @@
 {
-  "rootPath": "",
+  "rootPath": "D:\\",
   "folderColors": {
-    "d:/调度台/.git": "red",
-    "d:/调度台/.trae": "orange",
-    "d:/调度台/.vscode": "yellow",
-    "d:/调度台/测试资源库": "green",
-    "d:/调度台/说明文档": "cyan",
-    "d:/调度台/extension": "blue",
-    "d:/调度台/resources": "purple",
-    "d:/调度台/server": "gray"
+    "d:/调度台": "red",
+    "d:/工时统计": "orange",
+    "d:/system volume information": "yellow"
   },
   "folderViewModes": {
     "C:\\Users\\74927\\Desktop\\测试资源库": "dashboard",

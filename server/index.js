@@ -220,14 +220,19 @@ app.post('/api/pick-folder', async (req, res) => {
                 frame: false,
                 transparent: true,
                 skipTaskbar: true,
+                alwaysOnTop: true, // Force window to be on top
                 webPreferences: {
                     sandbox: true
                 }
             });
 
+            // Ensure the temp window is focused to bring dialog to front
+            tempWindow.setAlwaysOnTop(true, 'screen-saver');
+            
             const result = await dialog.showOpenDialog(tempWindow, {
                 title: '选择根目录',
-                properties: ['openDirectory']
+                properties: ['openDirectory'],
+                defaultPath: req.body.currentPath || undefined // Optional: start at current path if provided
             });
 
             tempWindow.destroy();
