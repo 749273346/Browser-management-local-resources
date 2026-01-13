@@ -21,13 +21,24 @@ try {
   logger.info('Main starting', { cwd: process.cwd(), userData: app.getPath('userData') });
 } catch {}
 
-const gotTheLock = app.requestSingleInstanceLock();
+let gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  try {
+    const userData = app.getPath('userData');
+    const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+    for (const f of lockFiles) {
+      try {
+        fs.unlinkSync(path.join(userData, f));
+      } catch {}
+    }
+  } catch {}
+  gotTheLock = app.requestSingleInstanceLock();
+}
 
 if (!gotTheLock) {
   try {
     logger.warn('Single instance lock failed; quitting');
   } catch {}
-  // Exit with 202 to indicate to the wrapper script that an instance is already running
   app.exit(202);
   return;
 }

@@ -114,7 +114,7 @@ $Form.Controls.Add($LogBox)
 # Logic Functions
 # ==========================================
 
-function Log-Message {
+function Write-LogMessage {
     param([string]$Message, [string]$Color = "#cccccc")
     
     $Form.Invoke([Action]{
@@ -129,7 +129,7 @@ function Log-Message {
     })
 }
 
-function Update-Status {
+function Set-Status {
     param([string]$Message)
     $Form.Invoke([Action]{
         $StatusLabel.Text = $Message
@@ -163,7 +163,7 @@ $MainLogic = {
     param($RootDir, $ServerDir, $MarkerFile, $NodeInstaller, $HealthUrl)
     
     # Helper for sync logging back to UI
-    function Emit-Log {
+    function Write-Log {
         param($Msg, $Color="#cccccc")
         $syncHash.Form.Invoke([Action]{ 
             $timestamp = Get-Date -Format "HH:mm:ss"
@@ -176,44 +176,102 @@ $MainLogic = {
         })
     }
 
-    function Emit-Status {
+    function Set-Status {
         param($Msg)
         $syncHash.Form.Invoke([Action]{ $syncHash.StatusLabel.Text = $Msg })
     }
 
+    function Test-Health200 {
+        param([string]$Url)
+        try {
+            $req = [System.Net.HttpWebRequest]::Create($Url)
+            $req.Method = "GET"
+            $req.Timeout = 2000
+            $req.ReadWriteTimeout = 2000
+            try {
+                $req.Proxy = [System.Net.GlobalProxySelection]::GetEmptyWebProxy()
+            } catch {}
+            $resp = $req.GetResponse()
+            try {
+                return ([int]$resp.StatusCode -eq 200)
+            } finally {
+                try { $resp.Close() } catch {}
+            }
+        } catch {
+            return $false
+        }
+    }
+
+    Write-Log "Setup root: $RootDir" "#808080"
+    Write-Log "Health URL: $HealthUrl" "#808080"
+
+    function Get-ListeningPidsForPort {
+        param([int]$Port)
+        $pids = New-Object System.Collections.Generic.HashSet[int]
+        try {
+            $listeners = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+            foreach ($l in $listeners) {
+                try {
+                    $pidValue = [int]$l.OwningProcess
+                    if ($pidValue -gt 0) { [void]$pids.Add($pidValue) }
+                } catch {}
+            }
+        } catch {}
+
+        if ($pids.Count -gt 0) { return $pids }
+
+        try {
+            $lines = & netstat -ano -p tcp 2>$null
+            foreach ($line in $lines) {
+                if ($line -notmatch "\\sLISTENING\\s") { continue }
+                if ($line -notmatch (":" + [string]$Port + "\\s")) { continue }
+                $parts = $line -split "\\s+" | Where-Object { $_ -ne "" }
+                if ($parts.Count -ge 5) {
+                    $pidText = $parts[$parts.Count - 1]
+                    $pidValue = 0
+                    if ([int]::TryParse($pidText, [ref]$pidValue)) {
+                        if ($pidValue -gt 0) { [void]$pids.Add($pidValue) }
+                    }
+                }
+            }
+        } catch {}
+
+        return $pids
+    }
+
     # 1. Check Node.js
-    Emit-Status "Checking Environment..."
-    Emit-Log "Checking Node.js environment..." "#4caf50"
+    Set-Status "Checking Environment..."
+    Write-Log "Checking Node.js environment..." "#4caf50"
     
     try {
         $nodeVersion = & node -v 2>&1
         if ($LASTEXITCODE -eq 0) {
-            Emit-Log "Node.js found: $nodeVersion" "#4caf50"
+            Write-Log "Node.js found: $nodeVersion" "#4caf50"
             try {
                 $nodeCmdPath = (Get-Command node -ErrorAction Stop).Source
-                Emit-Log "Node path: $nodeCmdPath" "#808080"
+                Write-Log "Node path: $nodeCmdPath" "#808080"
             } catch {}
             try {
                 $npmCmdPath = (Get-Command npm -ErrorAction Stop).Source
-                Emit-Log "npm path: $npmCmdPath" "#808080"
+                Write-Log "npm path: $npmCmdPath" "#808080"
             } catch {}
         } else {
             throw "Node.js not found"
         }
     } catch {
-        Emit-Log "Node.js not found. Starting installation..." "#ce9178"
-        Emit-Status "Installing Node.js..."
+        Write-Log "Node.js not found. Starting installation..." "#ce9178"
+        Set-Status "Installing Node.js..."
         
         if (Test-Path $NodeInstaller) {
-            Emit-Log "Installing from local package: $NodeInstaller"
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$NodeInstaller`" /qb /norestart" -PassThru -Wait
+            Write-Log "Installing from local package: $NodeInstaller"
+            Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$NodeInstaller`" /qb /norestart" -PassThru -Wait | Out-Null
         } else {
-            Emit-Log "Downloading Node.js..."
+            Write-Log "Downloading Node.js..."
             $url = "https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi"
             $tempMsi = "$env:TEMP\node-install.msi"
             Invoke-WebRequest -Uri $url -OutFile $tempMsi
-            Emit-Log "Installing Node.js..."
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$tempMsi`" /qb /norestart" -PassThru -Wait
+            Write-Log "Installing Node.js..."
+            Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$tempMsi`" /qb /norestart" -PassThru -Wait | Out-Null
         }
         
         try {
@@ -231,33 +289,33 @@ $MainLogic = {
         try {
             $nodeVersionAfter = & node -v 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Emit-Log "Node.js installed and available: $nodeVersionAfter" "#4caf50"
+                Write-Log "Node.js installed and available: $nodeVersionAfter" "#4caf50"
             } else {
                 $nodeExe = Join-Path $env:ProgramFiles "nodejs\node.exe"
                 if (Test-Path $nodeExe) {
                     $nodeVersionAfter = & $nodeExe -v 2>&1
-                    Emit-Log "Node.js installed at: $nodeExe ($nodeVersionAfter)" "#4caf50"
+                    Write-Log "Node.js installed at: $nodeExe ($nodeVersionAfter)" "#4caf50"
                 } else {
-                    Emit-Log "Node.js installed but not available in PATH." "#f44747"
-                    Emit-Status "Error"
+                    Write-Log "Node.js installed but not available in PATH." "#f44747"
+                    Set-Status "Error"
                     return
                 }
             }
         } catch {
-            Emit-Log "Node.js installation completed but verification failed." "#f44747"
-            Emit-Status "Error"
+            Write-Log "Node.js installation completed but verification failed." "#f44747"
+            Set-Status "Error"
             return
         }
     }
 
     # 2. Check Dependencies
-    Emit-Status "Checking Dependencies..."
-    Emit-Log "Checking server dependencies..."
+    Set-Status "Checking Dependencies..."
+    Write-Log "Checking server dependencies..."
     
     $electronPath = Join-Path $ServerDir "node_modules\electron"
     if (-not (Test-Path $electronPath)) {
-        Emit-Log "Dependencies missing. Running 'npm install'..." "#ce9178"
-        Emit-Status "Installing Dependencies (this may take a while)..."
+        Write-Log "Dependencies missing. Running 'npm install'..." "#ce9178"
+        Set-Status "Installing Dependencies (this may take a while)..."
         
         $npmCmd = "npm"
         try {
@@ -279,10 +337,10 @@ $MainLogic = {
         $p.StartInfo = $psi
         
         $p.add_OutputDataReceived({ 
-            if (-not [string]::IsNullOrEmpty($_.Data)) { Emit-Log "npm: $($_.Data)" "#808080" } 
+            if (-not [string]::IsNullOrEmpty($_.Data)) { Write-Log "npm: $($_.Data)" "#808080" } 
         })
         $p.add_ErrorDataReceived({ 
-            if (-not [string]::IsNullOrEmpty($_.Data)) { Emit-Log "npm err: $($_.Data)" "#ce9178" } 
+            if (-not [string]::IsNullOrEmpty($_.Data)) { Write-Log "npm err: $($_.Data)" "#ce9178" } 
         })
         
         $p.Start() | Out-Null
@@ -291,62 +349,76 @@ $MainLogic = {
         $p.WaitForExit()
         
         if ($p.ExitCode -ne 0) {
-            Emit-Log "Dependency installation failed!" "#f44747"
-            Emit-Status "Error"
+            Write-Log "Dependency installation failed!" "#f44747"
+            Set-Status "Error"
             return
         }
-        Emit-Log "Dependencies installed successfully." "#4caf50"
+        Write-Log "Dependencies installed successfully." "#4caf50"
     } else {
-        Emit-Log "Dependencies already installed." "#4caf50"
+        Write-Log "Dependencies already installed." "#4caf50"
     }
 
     # 3. Start Service
-    Emit-Status "Starting Service..."
+    Set-Status "Starting Service..."
     
     # Check and clear port 3001 if occupied (fix for zombie processes)
     try {
         $port = 3001
-        $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-        if ($connections) {
-            foreach ($conn in $connections) {
-                $pidToKill = $conn.OwningProcess
-                Emit-Log "Port $port is occupied by PID $pidToKill. Killing zombie process..." "#ce9178"
+        $pidsToKill = Get-ListeningPidsForPort -Port $port
+        if ($pidsToKill.Count -gt 0) {
+            if (Test-Health200 -Url $HealthUrl) {
+                Write-Log "Service already running and healthy on $HealthUrl" "#4caf50"
+                New-Item -ItemType File -Path $MarkerFile -Force | Out-Null
+                return
+            }
+
+            foreach ($pidToKill in $pidsToKill) {
+                # Try to kill supervisor script (wscript) first to prevent auto-restart
+                try {
+                    $wscripts = Get-WmiObject Win32_Process -Filter "Name='wscript.exe'"
+                    foreach ($w in $wscripts) {
+                        if ($w.CommandLine -like "*start-server-hidden.vbs*") {
+                            Write-Log "Stopping supervisor process PID $($w.ProcessId)..." "#ce9178"
+                            Stop-Process -Id $w.ProcessId -Force -ErrorAction SilentlyContinue
+                        }
+                    }
+                } catch {}
+
+                Write-Log "Port $port is occupied by PID $pidToKill. Killing zombie process..." "#ce9178"
                 Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
             }
+
             Start-Sleep -Seconds 2
         }
     } catch {
-        Emit-Log "Warning: Failed to check port usage. Proceeding..." "#808080"
+        Write-Log "Warning: Failed to check port usage. Proceeding..." "#808080"
     }
 
-    Emit-Log "Launching background service..."
+    Write-Log "Launching background service..."
     
     $vbsPath = Join-Path $RootDir "start-server-hidden.vbs"
-    Start-Process -FilePath "wscript.exe" -ArgumentList "//B //NoLogo `"$vbsPath`""
+    Start-Process -FilePath "wscript.exe" -ArgumentList "//B //NoLogo `"$vbsPath`" /silent"
     
     # 4. Health Check
-    Emit-Log "Waiting for service health check..."
-    Emit-Status "Waiting for Service..."
+    Write-Log "Waiting for service health check..."
+    Set-Status "Waiting for Service..."
     
     $maxRetries = 30
     $retry = 0
     $healthy = $false
     $healthUrls = @(
-        $HealthUrl,
-        "http://localhost:3001/health",
-        "http://[::1]:3001/health"
+        $HealthUrl
     )
     $lastErrorSummary = $null
     
     while ($retry -lt $maxRetries) {
         foreach ($u in $healthUrls) {
             try {
-                $resp = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 2 -Proxy $null -ErrorAction Stop
-                if ($resp.StatusCode -eq 200) {
+                if (Test-Health200 -Url $u) {
                     $healthy = $true
                     break
                 }
-                $lastErrorSummary = "HTTP $($resp.StatusCode) from $u"
+                $lastErrorSummary = "Not OK from $u"
             } catch {
                 $statusCode = $null
                 try {
@@ -368,15 +440,15 @@ $MainLogic = {
         Start-Sleep -Seconds 1
         $retry++
         if ($retry % 5 -eq 0) {
-            if ($lastErrorSummary) { Emit-Log "Waiting... ($retry/$maxRetries) Last: $lastErrorSummary" }
-            else { Emit-Log "Waiting... ($retry/$maxRetries)" }
+            if ($lastErrorSummary) { Write-Log "Waiting... ($retry/$maxRetries) Last: $lastErrorSummary" }
+            else { Write-Log "Waiting... ($retry/$maxRetries)" }
         }
     }
     
     if ($healthy) {
-        Emit-Log "Service is UP and RUNNING!" "#4caf50"
-        Emit-Status "Running"
-        Emit-Log "You can close this window. The service will continue in the tray."
+        Write-Log "Service is UP and RUNNING!" "#4caf50"
+        Set-Status "Running"
+        Write-Log "You can close this window. The service will continue in the tray."
         
         # Create marker file
         New-Item -ItemType File -Path $MarkerFile -Force | Out-Null
@@ -385,27 +457,27 @@ $MainLogic = {
         # Optional: Close window automatically? User might want to see it.
         # We'll leave it open for user to close.
     } else {
-        Emit-Log "Service failed to start responding." "#f44747"
-        Emit-Status "Timeout"
+        Write-Log "Service failed to start responding." "#f44747"
+        Set-Status "Timeout"
         
         # Try to read logs for diagnosis
         $logDir = "$env:APPDATA\LocalResourceManager\logs"
         if (Test-Path $logDir) {
             $latestLog = Get-ChildItem $logDir -Filter "app-*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($latestLog) {
-                Emit-Log "Found log file: $($latestLog.Name)" "#ce9178"
-                Emit-Log "--- Tail of log ---" "#ce9178"
+                Write-Log "Found log file: $($latestLog.Name)" "#ce9178"
+                Write-Log "--- Tail of log ---" "#ce9178"
                 try {
-                    Get-Content $latestLog.FullName -Tail 20 -ErrorAction Stop | ForEach-Object { Emit-Log $_ "#808080" }
+                    Get-Content $latestLog.FullName -Tail 20 -ErrorAction Stop | ForEach-Object { Write-Log $_ "#808080" }
                 } catch {
-                    Emit-Log "Could not read log file." "#f44747"
+                    Write-Log "Could not read log file." "#f44747"
                 }
             } else {
-                 Emit-Log "No log files found in $logDir" "#ce9178"
+                 Write-Log "No log files found in $logDir" "#ce9178"
             }
         } else {
-             Emit-Log "Log directory not found: $logDir" "#ce9178"
-             Emit-Log "This suggests the service process didn't start at all." "#ce9178"
+             Write-Log "Log directory not found: $logDir" "#ce9178"
+             Write-Log "This suggests the service process didn't start at all." "#ce9178"
         }
     }
 }
