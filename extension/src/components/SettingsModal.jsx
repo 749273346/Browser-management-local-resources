@@ -44,6 +44,7 @@ const PRESET_WALLPAPERS = [
 
 export default function SettingsModal({ isOpen, onClose, showToast }) {
   const [activeTab, setActiveTab] = useState('appearance');
+  const SERVER_URL = 'http://localhost:3001';
   
   // Settings State
   const [bgImage, setBgImage] = useState(normalizeBgValue(localStorage.getItem('bgImage') || ''));
@@ -218,10 +219,32 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
       setWallpaperMenu({ x: e.clientX, y: e.clientY, url, isCustom, isPreset });
   };
 
+  const saveSettingsToServer = async (overrides = {}) => {
+      const settings = {
+          rootPath: localStorage.getItem('rootPath'),
+          folderColors: JSON.parse(localStorage.getItem('folderColors') || '{}'),
+          folderViewModes: JSON.parse(localStorage.getItem('folderViewModes') || '{}'),
+          appTheme: localStorage.getItem('appTheme'),
+          colorMode: localStorage.getItem('colorMode'),
+          bgImage: localStorage.getItem('bgImage'),
+          glassOpacity: localStorage.getItem('glassOpacity'),
+          glassBlur: localStorage.getItem('glassBlur'),
+          ...overrides
+      };
+      await fetch(`${SERVER_URL}/api/settings`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+      });
+  };
+
   const handleChangeRoot = async () => {
       try {
-          const res = await fetch('http://localhost:3001/api/pick-folder', { method: 'POST' });
+          const res = await fetch(`${SERVER_URL}/api/pick-folder`, { method: 'POST' });
           const data = await res.json();
+          if (!res.ok) {
+              throw new Error(data?.error || 'Server error');
+          }
           if (data.path) {
               const newPath = data.path;
               // Update history
@@ -232,13 +255,16 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
               // Set new root
               localStorage.setItem('rootPath', newPath);
               setCurrentRoot(newPath);
+              await saveSettingsToServer({ rootPath: newPath });
               
               if (confirm('目录已更改，需要刷新页面以生效。是否立即刷新？')) {
                   window.location.href = 'index.html';
               }
           }
       } catch (err) {
-          alert('无法打开文件夹选择器');
+          const message = err?.message ? `无法更改目录：${err.message}` : '无法更改目录';
+          if (showToast) showToast(message, 'error');
+          else alert(message);
       }
   };
 
@@ -246,6 +272,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
       if (path === currentRoot) return;
       if (confirm(`切换到历史目录: ${path}?`)) {
           localStorage.setItem('rootPath', path);
+          saveSettingsToServer({ rootPath: path }).catch(() => {});
           window.location.href = 'index.html';
       }
   };
@@ -253,6 +280,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
   const handleLogout = () => {
       if (confirm('确定要退出当前资源库并返回初始界面吗？')) {
           localStorage.removeItem('rootPath');
+          saveSettingsToServer({ rootPath: '' }).catch(() => {});
           window.location.href = 'index.html';
       }
   };

@@ -1,15 +1,9 @@
 {
-  "rootPath": "C:\\Users\\74927\\Desktop\\测试资源库",
+  "rootPath": "",
   "folderColors": {
-    "c:/users/74927/desktop/测试资源库/安全管理": "green",
-    "c:/users/74927/desktop/测试资源库/生产管理": "blue",
-    "c:/users/74927/desktop/测试资源库/综合管理": "yellow",
-    "c:/users/74927/desktop/测试资源库/表格数据": "orange",
-    "c:/users/74927/desktop/测试资源库/多媒体": "yellow",
-    "c:/users/74927/desktop/测试资源库/深层目录": "green",
-    "c:/users/74927/desktop/测试资源库/图片素材": "blue",
-    "c:/users/74927/desktop/测试资源库/文档资料": "purple",
-    "c:/users/74927/desktop/测试资源库/项目文件": "gray"
+    "e:/qc-攻关小组/成果安装包/派工单自动处理系统/2025 派工单": "red",
+    "e:/qc-攻关小组/成果安装包/派工单自动处理系统/人员信息表": "orange",
+    "e:/qc-攻关小组/成果安装包/派工单自动处理系统/wte-pro": "yellow"
   },
   "folderViewModes": {
     "C:\\Users\\74927\\Desktop\\测试资源库": "dashboard",

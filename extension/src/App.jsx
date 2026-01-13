@@ -56,7 +56,7 @@ const sanitizeFolderColors = (raw, rootKey = getRootKey()) => {
 function App() {
   const SERVER_URL = 'http://localhost:3001';
 
-  const updateServerSettings = async () => {
+  const updateServerSettings = async (overrides = {}) => {
       try {
           const settings = {
               rootPath: localStorage.getItem('rootPath'),
@@ -66,7 +66,8 @@ function App() {
               colorMode: localStorage.getItem('colorMode'),
               bgImage: localStorage.getItem('bgImage'),
               glassOpacity: localStorage.getItem('glassOpacity'),
-              glassBlur: localStorage.getItem('glassBlur')
+              glassBlur: localStorage.getItem('glassBlur'),
+              ...overrides
           };
           await fetch(`${SERVER_URL}/api/settings`, {
               method: 'POST',
@@ -317,9 +318,10 @@ function App() {
       });
   }, [isRoot, currentViewMode, visibleFiles, setFolderColors]);
 
-  const handleSetRoot = (newPath) => {
+  const handleSetRoot = async (newPath) => {
     localStorage.setItem('rootPath', newPath);
     setPath(newPath);
+    await updateServerSettings({ rootPath: newPath });
     window.location.href = 'index.html'; 
   };
 
