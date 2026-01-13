@@ -238,15 +238,35 @@ app.post('/api/open', async (req, res) => {
         return exec(command, { encoding: 'utf8' }, (error) => {
             if (error) {
                 logger.error(`exec error: ${error}`);
+                logger.error(`Error details - message: ${error.message}, code: ${error.code}, signal: ${error.signal}`);
                 
-                // Fallback: try rundll32 if start fails (sometimes works better for associations)
-                logger.info('Attempting fallback with rundll32...');
-                return execFile('rundll32.exe', ['url.dll,FileProtocolHandler', cleanPath], (err2) => {
-                    if (err2) {
-                        logger.error(`Fallback rundll32 error: ${err2}`);
-                        return res.status(500).json({ error: error.message + " | Fallback: " + err2.message });
+                // Fallback 1: try PowerShell Start-Process (more reliable for complex paths)
+                logger.info('Attempting fallback with PowerShell Start-Process...');
+                const psCommand = `powershell -NoProfile -Command "Start-Process -FilePath \\"${cleanPath}\\" -Verb Open"`;
+                
+                return exec(psCommand, { encoding: 'utf8' }, (psError) => {
+                    if (psError) {
+                        logger.error(`PowerShell fallback error: ${psError}`);
+                        
+                        // Fallback 2: try rundll32 if PowerShell fails
+                        logger.info('Attempting fallback with rundll32...');
+                        return execFile('rundll32.exe', ['url.dll,FileProtocolHandler', cleanPath], (err2) => {
+                            if (err2) {
+                                logger.error(`Fallback rundll32 error: ${err2}`);
+                                return res.status(500).json({ 
+                                    error: `All open methods failed: ${error.message} | PowerShell: ${psError.message} | rundll32: ${err2.message}`,
+                                    details: {
+                                        originalError: error.message,
+                                        powerShellError: psError.message,
+                                        rundll32Error: err2.message,
+                                        attemptedPath: cleanPath
+                                    }
+                                });
+                            }
+                            return res.json({ success: true, message: `Opened ${targetPath} (rundll32 fallback)` });
+                        });
                     }
-                    return res.json({ success: true, message: `Opened ${targetPath} (fallback)` });
+                    return res.json({ success: true, message: `Opened ${targetPath} (PowerShell fallback)` });
                 });
             }
             res.json({ success: true, message: `Opened ${targetPath}` });
