@@ -244,7 +244,7 @@ export default function SearchBar({ currentPath, onNavigate }) {
             {/* Search Input */}
             <div className={`
                 flex items-center transition-all duration-300 ease-in-out
-                ${isActive ? 'w-[480px] bg-white dark:bg-slate-800 ring-2 ring-primary-500/50' : 'w-48 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60'}
+                ${isActive ? 'w-[480px] bg-white dark:bg-slate-800' : 'w-48 bg-white/40 dark:bg-slate-800/40 hover:bg-white/60 dark:hover:bg-slate-800/60'}
                 backdrop-blur-md rounded-full border border-white/20 dark:border-white/10 shadow-sm
             `}>
                 <Search size={18} className="ml-3 text-gray-500 dark:text-slate-400 flex-shrink-0" />
@@ -256,7 +256,9 @@ export default function SearchBar({ currentPath, onNavigate }) {
                     onFocus={() => setIsActive(true)}
                     onKeyDown={handleKeyDown}
                     placeholder="搜索文件..."
-                    className="w-full bg-transparent border-none focus:ring-0 text-sm px-3 py-2 text-gray-800 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-500"
+                    className="searchbar-input w-full bg-transparent border-none appearance-none focus:ring-0 outline-none focus:outline-none text-sm px-3 py-2 text-gray-800 dark:text-slate-100 placeholder-gray-500 dark:placeholder-slate-500"
+                    spellCheck="false"
+                    autoComplete="off"
                 />
                 {query && (
                     <button 

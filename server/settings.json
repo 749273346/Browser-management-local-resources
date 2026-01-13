@@ -11,7 +11,8 @@
     "c:/users/74927/desktop/测试资源库/项目文件": "gray",
     "c:/users/74927/desktop/测试资源库/综合管理": "red",
     "c:/users/74927/desktop/测试资源库/多媒体 - 副本": "green",
-    "c:/users/74927/desktop/测试资源库/综合管理 - 副本": "yellow"
+    "c:/users/74927/desktop/测试资源库/综合管理 - 副本": "yellow",
+    "c:/users/74927/desktop/测试资源库": "red"
   },
   "folderViewModes": {
     "C:\\Users\\74927\\Desktop\\测试资源库": "dashboard",
@@ -28,8 +29,8 @@
     "C:\\Users\\74927\\Desktop\\测试资源库\\多媒体": "grid"
   },
   "appTheme": "glass-morphism",
-  "colorMode": "night",
-  "bgImage": "/wallpapers/gz_electric_ss8.jpg",
+  "colorMode": "day",
+  "bgImage": "",
   "glassOpacity": "0.5",
   "glassBlur": "14"
 }

@@ -56,6 +56,29 @@ body {
   z-index: -1;
 }
 
+input:focus,
+textarea:focus,
+select:focus,
+button:focus,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.searchbar-input {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.searchbar-input:focus,
+.searchbar-input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 /* Custom scrollbar matching Chrome */
 .custom-scrollbar::-webkit-scrollbar {
   width: 10px;

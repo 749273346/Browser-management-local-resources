@@ -14,11 +14,11 @@ const normalizeBgValue = (value) => {
 const PRESET_WALLPAPERS = [
   {
     name: '蒸汽时代 (粤汉铁路 KF型)',
-    url: '/wallpapers/gz_steam_kf7.jpg'
+    url: '/wallpapers/gz_steam_kf7.jpg?v=2'
   },
   {
     name: '内燃时代 (广州站 DF4B)',
-    url: '/wallpapers/gz_diesel_df4b.jpg'
+    url: '/wallpapers/gz_diesel_df4b.jpg?v=2'
   },
   {
     name: '电力时代 (广深线 SS8)',
@@ -26,11 +26,11 @@ const PRESET_WALLPAPERS = [
   },
   {
     name: '高铁时代 (和谐号 CRH1A)',
-    url: '/wallpapers/gz_hsr_crh1a.jpg'
+    url: '/wallpapers/gz_hsr_crh1a.jpg?v=3'
   },
   {
     name: '复兴号 (智能动车组 CR400AF-Z)',
-    url: '/wallpapers/gz_hsr_fuxing.jpg'
+    url: '/wallpapers/gz_hsr_fuxing.jpg?v=2'
   },
   {
     name: '广铁历史博物馆 (SS6B型电力机车)',
@@ -345,7 +345,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                     variant="ghost" 
                     active={activeTab === 'appearance'}
                     onClick={() => setActiveTab('appearance')}
-                    className="w-full justify-start"
+                    className="w-full !justify-start"
                     icon={ImageIcon}
                 >
                     外观设置
@@ -354,7 +354,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                     variant="ghost" 
                     active={activeTab === 'directory'}
                     onClick={() => setActiveTab('directory')}
-                    className="w-full justify-start"
+                    className="w-full !justify-start"
                     icon={Folder}
                 >
                     目录管理
@@ -363,7 +363,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                     variant="ghost" 
                     active={activeTab === 'tweaks'}
                     onClick={() => setActiveTab('tweaks')}
-                    className="w-full justify-start"
+                    className="w-full !justify-start"
                     icon={Sliders}
                 >
                     视觉微调
@@ -372,7 +372,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                     variant="ghost" 
                     active={activeTab === 'about'}
                     onClick={() => setActiveTab('about')}
-                    className="w-full justify-start"
+                    className="w-full !justify-start"
                     icon={Info}
                 >
                     关于
@@ -609,16 +609,43 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                 )}
 
                 {activeTab === 'about' && (
-                    <div className="text-center py-8">
+                    <div className="text-center py-4">
                         <div className="w-16 h-16 bg-primary-100 dark:bg-primary-500/15 text-primary-600 dark:text-primary-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Info size={32} />
                         </div>
                         <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">调度中心资源管理系统</h2>
-                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">Version 2.1.0 (High-Speed Edition)</p>
-                        <div className="mt-8 p-4 bg-gray-50 dark:bg-slate-800/60 rounded-xl text-left text-sm text-gray-600 dark:text-slate-300 space-y-2">
-                            <p>🚄 <strong>广铁定制版</strong>：专为铁路职工打造的高效工具。</p>
-                            <p>🎨 <strong>个性化引擎</strong>：支持自定义壁纸与透明度。</p>
-                            <p>🛡️ <strong>安全隐私</strong>：所有配置仅保存在本地。</p>
+                        <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Version 2.1.0 (High-Speed Edition)</p>
+                        
+                        <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-800/60 rounded-xl text-left text-sm text-gray-600 dark:text-slate-300 space-y-3">
+                            <div>
+                                <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">单位</h4>
+                                <p>惠州电务段汕头水电车间</p>
+                            </div>
+                            
+                            <div>
+                                <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">技术指导</h4>
+                                <p>李海东、梁成欧、庄金旺、郭新城、洪映森</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div>
+                                    <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">作者</h4>
+                                    <p>智轨先锋组</p>
+                                </div>
+                                <div>
+                                    <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">联系方式</h4>
+                                    <p>电话：19119383440</p>
+                                    <p>微信：yh19119383440</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-4 text-xs text-gray-400 dark:text-slate-500 border-t border-gray-100 dark:border-slate-800 pt-4">
+                             <div className="flex justify-center space-x-4 mb-2">
+                                <span className="flex items-center"><span className="mr-1">🚄</span> 广铁定制版</span>
+                                <span className="flex items-center"><span className="mr-1">🎨</span> 个性化引擎</span>
+                                <span className="flex items-center"><span className="mr-1">🛡️</span> 本地存储</span>
+                            </div>
                         </div>
                     </div>
                 )}
