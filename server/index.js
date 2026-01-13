@@ -11,6 +11,8 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+const isElectronRuntime = () => Boolean(process.versions && process.versions.electron);
+
 // Serve static files from the extension build directory
 const extensionDistPath = path.join(__dirname, '../extension/dist');
 app.use(express.static(extensionDistPath));
@@ -207,7 +209,41 @@ app.post('/api/open', (req, res) => {
 });
 
 // API to open folder picker dialog
-app.post('/api/pick-folder', (req, res) => {
+app.post('/api/pick-folder', async (req, res) => {
+    if (isElectronRuntime()) {
+        try {
+            const { dialog, BrowserWindow } = require('electron');
+            const tempWindow = new BrowserWindow({
+                width: 0,
+                height: 0,
+                show: false,
+                frame: false,
+                transparent: true,
+                skipTaskbar: true,
+                webPreferences: {
+                    sandbox: true
+                }
+            });
+
+            const result = await dialog.showOpenDialog(tempWindow, {
+                title: '选择根目录',
+                properties: ['openDirectory']
+            });
+
+            tempWindow.destroy();
+
+            if (result.canceled) {
+                return res.json({ path: '' });
+            }
+
+            const selectedPath = (result.filePaths && result.filePaths[0]) ? result.filePaths[0] : '';
+            return res.json({ path: selectedPath || '' });
+        } catch (error) {
+            logger.error('Electron folder picker failed:', error);
+            return res.status(500).json({ error: 'Failed to open folder picker', details: error.message });
+        }
+    }
+
     // PowerShell command to open FolderBrowserDialog
     // Force UTF-8 encoding for output to handle non-ASCII paths correctly
     const psCommand = `
@@ -222,7 +258,7 @@ app.post('/api/pick-folder', (req, res) => {
     `;
 
     // Encode command to avoid quoting issues
-    const command = `powershell -Command "${psCommand.replace(/\n/g, ' ')}"`;
+    const command = `powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -Command "${psCommand.replace(/\n/g, ' ')}"`;
 
     exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
         if (error) {
