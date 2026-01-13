@@ -365,6 +365,20 @@ app.post('/api/delete', async (req, res) => {
     }
 });
 
+// Copy
+app.post('/api/copy', async (req, res) => {
+    const { source, destination } = req.body;
+    if (!source || !destination) return res.status(400).json({ error: 'Source and destination paths are required' });
+
+    try {
+        // Node.js 16.7.0+ supports fs.cp
+        await fs.cp(source, destination, { recursive: true });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 
 // Settings API
 const settingsPath = path.join(__dirname, 'settings.json');

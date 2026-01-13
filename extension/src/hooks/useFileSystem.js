@@ -91,6 +91,18 @@ export function useFileSystem() {
       });
   }, []);
 
+  const copyItem = useCallback(async (source, destination) => {
+      const res = await fetch(`${API_BASE}/copy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source, destination })
+      });
+      if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to copy item');
+      }
+  }, []);
+
   return {
     files,
     currentPath,
@@ -102,6 +114,7 @@ export function useFileSystem() {
     createFolder,
     createFile,
     renameItem,
-    deleteItem
+    deleteItem,
+    copyItem
   };
 }

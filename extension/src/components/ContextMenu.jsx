@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText } from 'lucide-react';
+import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText, Copy, Clipboard } from 'lucide-react';
 import { COLUMN_COLORS } from '../constants/theme';
 
-export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1 }) {
+export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
@@ -46,15 +46,23 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
     left: x,
   };
 
-  const MenuItem = ({ icon: Icon, label, onClick, danger = false, className = '' }) => (
+  const MenuItem = ({ icon: Icon, label, onClick, danger = false, disabled = false, className = '' }) => (
     <button
-      onClick={(e) => { e.stopPropagation(); onClick(); onClose(); }}
+      onClick={(e) => { 
+        if (disabled) return;
+        e.stopPropagation(); 
+        onClick(); 
+        onClose(); 
+      }}
+      disabled={disabled}
       className={`w-full flex items-center px-3 py-2 text-sm text-left rounded-md transition-colors
-        ${danger ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30' : 'text-gray-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:text-primary-700 dark:hover:text-primary-200'}
+        ${danger ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30' : 
+          disabled ? 'text-gray-400 cursor-not-allowed' :
+          'text-gray-700 dark:text-slate-200 hover:bg-primary-50 dark:hover:bg-primary-500/10 hover:text-primary-700 dark:hover:text-primary-200'}
         ${className}
       `}
     >
-      <Icon size={16} className="mr-3 opacity-70" />
+      <Icon size={16} className={`mr-3 ${disabled ? 'opacity-40' : 'opacity-70'}`} />
       <span>{label}</span>
     </button>
   );
@@ -111,6 +119,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
              </div>
           )}
           <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />
+          <MenuItem icon={Copy} label="复制 (Copy)" onClick={() => onAction('copy', file)} />
           <MenuItem 
             icon={fileHidden ? Eye : EyeOff} 
             label={fileHidden ? "取消停运 (Restore)" : "停运/隐藏 (Ignore)"} 
@@ -123,6 +132,8 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
       ) : (
         // Empty Space Context Menu
         <>
+          <MenuItem icon={Clipboard} label="粘贴 (Paste)" onClick={() => onAction('paste')} disabled={!hasClipboard} />
+          <Separator />
           <MenuHeader title="新建 (New)" />
           <MenuItem icon={FolderPlus} label="文件夹 (Folder)" onClick={() => onAction('new-folder')} />
           <MenuItem icon={FileText} label="文本文档 (.txt)" onClick={() => onAction('new-file-txt')} />

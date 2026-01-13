@@ -144,8 +144,11 @@ function App() {
     createFolder,
     createFile,
     renameItem,
-    deleteItem
+    deleteItem,
+    copyItem
   } = useFileSystem();
+
+  const [clipboard, setClipboard] = useState(null);
 
   const { toggleHidden, isHidden, showHidden, toggleShowHidden } = useHiddenFiles();
 
@@ -482,6 +485,40 @@ function App() {
           } else if (action === 'refresh') {
               fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
               showToast('已刷新');
+          } else if (action === 'copy') {
+              setClipboard({ path: file.path, name: file.name, isDirectory: file.isDirectory });
+              showToast('已复制');
+          } else if (action === 'paste') {
+              if (!clipboard) return;
+              
+              const separator = path.includes('/') ? '/' : '\\';
+              const getParentDir = (p) => {
+                  const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+                  if (idx === -1) return '';
+                  return p.substring(0, idx);
+              };
+              const isSameFolder = normalizePathKey(getParentDir(clipboard.path)) === normalizePathKey(path);
+ 
+              let baseName = clipboard.name;
+              let ext = '';
+              if (!clipboard.isDirectory) {
+                  const lastDotIndex = baseName.lastIndexOf('.');
+                  if (lastDotIndex > 0) {
+                      ext = baseName.substring(lastDotIndex);
+                      baseName = baseName.substring(0, lastDotIndex);
+                  }
+              }
+ 
+              if (isSameFolder) {
+                  baseName = `${baseName} - 副本`;
+              }
+              
+              const newName = getUniqueName(baseName, ext);
+              const destinationPath = `${path}${separator}${newName}`;
+              
+              await copyItem(clipboard.path, destinationPath);
+              await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
+              showToast('粘贴成功');
           }
       } catch (err) {
           showToast('操作失败: ' + err.message, 'error');
@@ -586,6 +623,7 @@ function App() {
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null })}
         isLevel1={isRoot && !!contextMenu.file?.isDirectory && isTopLevelFolderPath(contextMenu.file.path)}
+        hasClipboard={!!clipboard}
       />
 
       <ConfirmDialog
