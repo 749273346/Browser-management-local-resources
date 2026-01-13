@@ -103,7 +103,25 @@ function App() {
                       changed = true;
                   }
                   
-                  const keys = ['folderColors', 'folderViewModes', 'appTheme', 'colorMode', 'bgImage', 'glassOpacity', 'glassBlur'];
+                  const localAppTheme = localStorage.getItem('appTheme');
+                  if (!localAppTheme && settings.appTheme) {
+                      localStorage.setItem('appTheme', settings.appTheme);
+                      applyTheme(settings.appTheme);
+                      changed = true;
+                  } else if (localAppTheme && settings.appTheme !== localAppTheme) {
+                      updateServerSettings({ appTheme: localAppTheme }).catch(() => {});
+                  }
+                  
+                  const localColorMode = localStorage.getItem('colorMode');
+                  if (!localColorMode && settings.colorMode) {
+                      localStorage.setItem('colorMode', settings.colorMode);
+                      applyColorMode(settings.colorMode);
+                      changed = true;
+                  } else if (localColorMode && settings.colorMode !== localColorMode) {
+                      updateServerSettings({ colorMode: localColorMode }).catch(() => {});
+                  }
+                  
+                  const keys = ['folderColors', 'folderViewModes', 'bgImage', 'glassOpacity', 'glassBlur'];
                   keys.forEach(key => {
                       if (settings[key]) {
                           const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key]) : settings[key];
@@ -117,8 +135,6 @@ function App() {
                   if (changed) {
                       setFolderColors(sanitizeFolderColors(settings.folderColors));
                       setFolderViewModes(settings.folderViewModes || {});
-                      if (settings.appTheme) applyTheme(settings.appTheme);
-                      if (settings.colorMode) applyColorMode(settings.colorMode);
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
