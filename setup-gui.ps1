@@ -111,59 +111,17 @@ $LogBox.ScrollBars = "Vertical"
 $Form.Controls.Add($LogBox)
 
 # ==========================================
-# Logic Functions
-# ==========================================
-
-function Log-Message {
-    param([string]$Message, [string]$Color = "#cccccc")
-    
-    $Form.Invoke([Action]{
-        $timestamp = Get-Date -Format "HH:mm:ss"
-        $LogBox.SelectionStart = $LogBox.TextLength
-        $LogBox.SelectionColor = [System.Drawing.ColorTranslator]::FromHtml("#569cd6")
-        $LogBox.AppendText("[$timestamp] ")
-        
-        $LogBox.SelectionColor = [System.Drawing.ColorTranslator]::FromHtml($Color)
-        $LogBox.AppendText("$Message`r`n")
-        $LogBox.ScrollToCaret()
-    })
-}
-
-function Update-Status {
-    param([string]$Message)
-    $Form.Invoke([Action]{
-        $StatusLabel.Text = $Message
-    })
-}
-
-function Start-AsyncTask {
-    param($ScriptBlock)
-    
-    $rs = [runspacefactory]::CreateRunspace()
-    $rs.ApartmentState = "STA"
-    $rs.ThreadOptions = "ReuseThread"
-    $rs.Open()
-    $ps = [powershell]::Create()
-    $ps.Runspace = $rs
-    $ps.AddScript($ScriptBlock)
-    
-    # Pass variables
-    $ps.AddArgument($RootDir)
-    $ps.AddArgument($ServerDir)
-    $ps.AddArgument($MarkerFile)
-    $ps.AddArgument($NodeInstaller)
-    $ps.AddArgument($HealthUrl)
-    
-    $handle = $ps.BeginInvoke()
-    return @{ Pipe = $ps; Handle = $handle; Runspace = $rs }
-}
-
 # Main Logic Flow
+# ==========================================
 $MainLogic = {
     param($RootDir, $ServerDir, $MarkerFile, $NodeInstaller, $HealthUrl)
     
+    # 0. Safety Checks & Defaults
+    if ([string]::IsNullOrEmpty($RootDir)) { try { $RootDir = $PWD.Path } catch {} }
+    if ([string]::IsNullOrEmpty($ServerDir)) { try { $ServerDir = Join-Path $RootDir "server" } catch {} }
+    
     # Helper for sync logging back to UI
-    function Emit-Log {
+    function Write-GuiLog {
         param($Msg, $Color="#cccccc")
         $syncHash.Form.Invoke([Action]{ 
             $timestamp = Get-Date -Format "HH:mm:ss"
@@ -176,44 +134,44 @@ $MainLogic = {
         })
     }
 
-    function Emit-Status {
+    function Set-GuiStatus {
         param($Msg)
         $syncHash.Form.Invoke([Action]{ $syncHash.StatusLabel.Text = $Msg })
     }
 
     # 1. Check Node.js
-    Emit-Status "Checking Environment..."
-    Emit-Log "Checking Node.js environment..." "#4caf50"
+    Set-GuiStatus "Checking Environment..."
+    Write-GuiLog "Checking Node.js environment..." "#4caf50"
     
     try {
         $nodeVersion = & node -v 2>&1
         if ($LASTEXITCODE -eq 0) {
-            Emit-Log "Node.js found: $nodeVersion" "#4caf50"
+            Write-GuiLog "Node.js found: $nodeVersion" "#4caf50"
             try {
                 $nodeCmdPath = (Get-Command node -ErrorAction Stop).Source
-                Emit-Log "Node path: $nodeCmdPath" "#808080"
+                Write-GuiLog "Node path: $nodeCmdPath" "#808080"
             } catch {}
             try {
                 $npmCmdPath = (Get-Command npm -ErrorAction Stop).Source
-                Emit-Log "npm path: $npmCmdPath" "#808080"
+                Write-GuiLog "npm path: $npmCmdPath" "#808080"
             } catch {}
         } else {
             throw "Node.js not found"
         }
     } catch {
-        Emit-Log "Node.js not found. Starting installation..." "#ce9178"
-        Emit-Status "Installing Node.js..."
+        Write-GuiLog "Node.js not found. Starting installation..." "#ce9178"
+        Set-GuiStatus "Installing Node.js..."
         
         if (Test-Path $NodeInstaller) {
-            Emit-Log "Installing from local package: $NodeInstaller"
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$NodeInstaller`" /qb /norestart" -PassThru -Wait
+            Write-GuiLog "Installing from local package: $NodeInstaller"
+            Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$NodeInstaller`" /qb /norestart" -Wait
         } else {
-            Emit-Log "Downloading Node.js..."
+            Write-GuiLog "Downloading Node.js..."
             $url = "https://nodejs.org/dist/v18.17.1/node-v18.17.1-x64.msi"
             $tempMsi = "$env:TEMP\node-install.msi"
             Invoke-WebRequest -Uri $url -OutFile $tempMsi
-            Emit-Log "Installing Node.js..."
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$tempMsi`" /qb /norestart" -PassThru -Wait
+            Write-GuiLog "Installing Node.js..."
+            Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$tempMsi`" /qb /norestart" -Wait
         }
         
         try {
@@ -231,33 +189,37 @@ $MainLogic = {
         try {
             $nodeVersionAfter = & node -v 2>&1
             if ($LASTEXITCODE -eq 0) {
-                Emit-Log "Node.js installed and available: $nodeVersionAfter" "#4caf50"
+                Write-GuiLog "Node.js installed and available: $nodeVersionAfter" "#4caf50"
             } else {
                 $nodeExe = Join-Path $env:ProgramFiles "nodejs\node.exe"
                 if (Test-Path $nodeExe) {
                     $nodeVersionAfter = & $nodeExe -v 2>&1
-                    Emit-Log "Node.js installed at: $nodeExe ($nodeVersionAfter)" "#4caf50"
+                    Write-GuiLog "Node.js installed at: $nodeExe ($nodeVersionAfter)" "#4caf50"
                 } else {
-                    Emit-Log "Node.js installed but not available in PATH." "#f44747"
-                    Emit-Status "Error"
+                    Write-GuiLog "Node.js installed but not available in PATH." "#f44747"
+                    Set-GuiStatus "Error"
                     return
                 }
             }
         } catch {
-            Emit-Log "Node.js installation completed but verification failed." "#f44747"
-            Emit-Status "Error"
+            Write-GuiLog "Node.js installation completed but verification failed." "#f44747"
+            Set-GuiStatus "Error"
             return
         }
     }
 
     # 2. Check Dependencies
-    Emit-Status "Checking Dependencies..."
-    Emit-Log "Checking server dependencies..."
+    Set-GuiStatus "Checking Dependencies..."
+    Write-GuiLog "Checking server dependencies..."
     
-    $electronPath = Join-Path $ServerDir "node_modules\electron"
-    if (-not (Test-Path $electronPath)) {
-        Emit-Log "Dependencies missing. Running 'npm install'..." "#ce9178"
-        Emit-Status "Installing Dependencies (this may take a while)..."
+    $electronDir = Join-Path $ServerDir "node_modules\electron"
+    $electronExe = Join-Path $electronDir "dist\electron.exe"
+    # $electronCmd line removed (unused)
+    $depsOk = (Test-Path $electronExe)
+
+    if (-not $depsOk) {
+        Write-GuiLog "Dependencies missing. Running 'npm install'..." "#ce9178"
+        Set-GuiStatus "Installing Dependencies (this may take a while)..."
         
         $npmCmd = "npm"
         try {
@@ -279,10 +241,10 @@ $MainLogic = {
         $p.StartInfo = $psi
         
         $p.add_OutputDataReceived({ 
-            if (-not [string]::IsNullOrEmpty($_.Data)) { Emit-Log "npm: $($_.Data)" "#808080" } 
+            if (-not [string]::IsNullOrEmpty($_.Data)) { Write-GuiLog "npm: $($_.Data)" "#808080" } 
         })
         $p.add_ErrorDataReceived({ 
-            if (-not [string]::IsNullOrEmpty($_.Data)) { Emit-Log "npm err: $($_.Data)" "#ce9178" } 
+            if (-not [string]::IsNullOrEmpty($_.Data)) { Write-GuiLog "npm err: $($_.Data)" "#ce9178" } 
         })
         
         $p.Start() | Out-Null
@@ -291,42 +253,69 @@ $MainLogic = {
         $p.WaitForExit()
         
         if ($p.ExitCode -ne 0) {
-            Emit-Log "Dependency installation failed!" "#f44747"
-            Emit-Status "Error"
+            Write-GuiLog "Dependency installation failed!" "#f44747"
+            Set-GuiStatus "Error"
             return
         }
-        Emit-Log "Dependencies installed successfully." "#4caf50"
+        Write-GuiLog "Dependencies installed successfully." "#4caf50"
     } else {
-        Emit-Log "Dependencies already installed." "#4caf50"
+        Write-GuiLog "Dependencies already installed." "#4caf50"
     }
 
     # 3. Start Service
-    Emit-Status "Starting Service..."
+    Set-GuiStatus "Starting Service..."
     
     # Check and clear port 3001 if occupied (fix for zombie processes)
     try {
         $port = 3001
-        $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
-        if ($connections) {
-            foreach ($conn in $connections) {
-                $pidToKill = $conn.OwningProcess
-                Emit-Log "Port $port is occupied by PID $pidToKill. Killing zombie process..." "#ce9178"
-                Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
-            }
+        $listeners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+        $pids = @()
+        if ($listeners) {
+            $pids = $listeners | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -and $_ -gt 0 }
+        }
+
+        foreach ($pidToKill in $pids) {
+            Write-GuiLog "Port $port is occupied by PID $pidToKill. Killing process..." "#ce9178"
+            Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
+        }
+
+        if ($pids.Count -gt 0) {
             Start-Sleep -Seconds 2
         }
     } catch {
-        Emit-Log "Warning: Failed to check port usage. Proceeding..." "#808080"
+        Write-GuiLog "Warning: Failed to check port usage. Proceeding..." "#808080"
     }
 
-    Emit-Log "Launching background service..."
+    Write-GuiLog "Launching background service..."
     
+    if ([string]::IsNullOrEmpty($RootDir)) {
+        try { $RootDir = $PWD.Path } catch {}
+    }
+
     $vbsPath = Join-Path $RootDir "start-server-hidden.vbs"
-    Start-Process -FilePath "wscript.exe" -ArgumentList "//B //NoLogo `"$vbsPath`""
+    
+    if (-not (Test-Path $vbsPath)) {
+        Write-GuiLog "Error: Service launcher script not found at: $vbsPath" "#f44747"
+    } else {
+        try {
+            $argList = "//B //NoLogo `"$vbsPath`""
+            $launcherProc = Start-Process -FilePath "wscript.exe" -ArgumentList $argList -PassThru -ErrorAction Stop
+            if ($launcherProc -and $launcherProc.Id) {
+                Write-GuiLog "Launcher started (wscript.exe PID $($launcherProc.Id))" "#808080"
+            }
+        } catch {
+            Write-GuiLog "Retry launching service without PassThru..." "#808080"
+            try {
+                Start-Process -FilePath "wscript.exe" -ArgumentList "//B //NoLogo `"$vbsPath`"" -ErrorAction Stop
+            } catch {
+                Write-GuiLog "Failed to launch service: $_" "#f44747"
+            }
+        }
+    }
     
     # 4. Health Check
-    Emit-Log "Waiting for service health check..."
-    Emit-Status "Waiting for Service..."
+    Write-GuiLog "Waiting for service health check..."
+    Set-GuiStatus "Waiting for Service..."
     
     $maxRetries = 30
     $retry = 0
@@ -368,15 +357,15 @@ $MainLogic = {
         Start-Sleep -Seconds 1
         $retry++
         if ($retry % 5 -eq 0) {
-            if ($lastErrorSummary) { Emit-Log "Waiting... ($retry/$maxRetries) Last: $lastErrorSummary" }
-            else { Emit-Log "Waiting... ($retry/$maxRetries)" }
+            if ($lastErrorSummary) { Write-GuiLog "Waiting... ($retry/$maxRetries) Last: $lastErrorSummary" }
+            else { Write-GuiLog "Waiting... ($retry/$maxRetries)" }
         }
     }
     
     if ($healthy) {
-        Emit-Log "Service is UP and RUNNING!" "#4caf50"
-        Emit-Status "Running"
-        Emit-Log "You can close this window. The service will continue in the tray."
+        Write-GuiLog "Service is UP and RUNNING!" "#4caf50"
+        Set-GuiStatus "Running"
+        Write-GuiLog "You can close this window. The service will continue in the tray."
         
         # Create marker file
         New-Item -ItemType File -Path $MarkerFile -Force | Out-Null
@@ -385,27 +374,57 @@ $MainLogic = {
         # Optional: Close window automatically? User might want to see it.
         # We'll leave it open for user to close.
     } else {
-        Emit-Log "Service failed to start responding." "#f44747"
-        Emit-Status "Timeout"
+        Write-GuiLog "Service failed to start responding." "#f44747"
+        Set-GuiStatus "Timeout"
+
+        try {
+            $port = 3001
+            $listeners = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
+            if ($listeners) {
+                $pids = $listeners | Select-Object -ExpandProperty OwningProcess -Unique | Where-Object { $_ -and $_ -gt 0 }
+                if ($pids.Count -gt 0) {
+                    foreach ($procId in $pids) {
+                        $pname = $null
+                        try { $pname = (Get-Process -Id $procId -ErrorAction SilentlyContinue).ProcessName } catch {}
+                        if ($pname) { Write-GuiLog "Port $port is still LISTENING by PID $procId ($pname)." "#ce9178" }
+                        else { Write-GuiLog "Port $port is still LISTENING by PID $procId." "#ce9178" }
+                    }
+                } else {
+                    Write-GuiLog "Port $port is LISTENING but owning PID could not be determined." "#ce9178"
+                }
+            } else {
+                Write-GuiLog "Port $port is not listening. Service likely failed to start." "#ce9178"
+            }
+        } catch {
+            Write-GuiLog "Warning: Failed to collect port diagnostics." "#808080"
+        }
+
+        try {
+            $electronExe = Join-Path $ServerDir "node_modules\electron\dist\electron.exe"
+            if (-not (Test-Path $electronExe)) {
+                Write-GuiLog "Electron binary not found at: $electronExe" "#ce9178"
+                Write-GuiLog "This usually means node_modules was not fully copied or install is incomplete." "#ce9178"
+            }
+        } catch {}
         
         # Try to read logs for diagnosis
         $logDir = "$env:APPDATA\LocalResourceManager\logs"
         if (Test-Path $logDir) {
             $latestLog = Get-ChildItem $logDir -Filter "app-*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($latestLog) {
-                Emit-Log "Found log file: $($latestLog.Name)" "#ce9178"
-                Emit-Log "--- Tail of log ---" "#ce9178"
+                Write-GuiLog "Found log file: $($latestLog.Name)" "#ce9178"
+                Write-GuiLog "--- Tail of log ---" "#ce9178"
                 try {
-                    Get-Content $latestLog.FullName -Tail 20 -ErrorAction Stop | ForEach-Object { Emit-Log $_ "#808080" }
+                    Get-Content $latestLog.FullName -Tail 20 -ErrorAction Stop | ForEach-Object { Write-GuiLog $_ "#808080" }
                 } catch {
-                    Emit-Log "Could not read log file." "#f44747"
+                    Write-GuiLog "Could not read log file." "#f44747"
                 }
             } else {
-                 Emit-Log "No log files found in $logDir" "#ce9178"
+                 Write-GuiLog "No log files found in $logDir" "#ce9178"
             }
         } else {
-             Emit-Log "Log directory not found: $logDir" "#ce9178"
-             Emit-Log "This suggests the service process didn't start at all." "#ce9178"
+             Write-GuiLog "Log directory not found: $logDir" "#ce9178"
+             Write-GuiLog "This suggests the service process didn't start at all." "#ce9178"
         }
     }
 }
