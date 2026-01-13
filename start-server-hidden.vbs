@@ -1,4 +1,7 @@
 Set WshShell = CreateObject("WScript.Shell")
+Set env = WshShell.Environment("Process")
+env("ELECTRON_ENABLE_LOGGING") = "1"
+env("LRM_DEBUG") = "1"
 Dim rootDir, serverDir, strArgs, silent, i, a, electronCmd, electronExe, cmdLine, shown, exitCode, delayMs, maxDelayMs, startAt, ranSeconds
 Dim installStartup
 

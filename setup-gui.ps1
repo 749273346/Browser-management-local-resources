@@ -1,6 +1,9 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+
 # ==========================================
 # P/Invoke for Dark Mode Title Bar
 # ==========================================
@@ -186,6 +189,14 @@ $MainLogic = {
         $nodeVersion = & node -v 2>&1
         if ($LASTEXITCODE -eq 0) {
             Emit-Log "Node.js found: $nodeVersion" "#4caf50"
+            try {
+                $nodeCmdPath = (Get-Command node -ErrorAction Stop).Source
+                Emit-Log "Node path: $nodeCmdPath" "#808080"
+            } catch {}
+            try {
+                $npmCmdPath = (Get-Command npm -ErrorAction Stop).Source
+                Emit-Log "npm path: $npmCmdPath" "#808080"
+            } catch {}
         } else {
             throw "Node.js not found"
         }
@@ -205,10 +216,38 @@ $MainLogic = {
             $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList "/i `"$tempMsi`" /qb /norestart" -PassThru -Wait
         }
         
-        Emit-Log "Node.js installed. Restarting check..." "#dcdcaa"
-        # In a real scenario, we might need to refresh env vars or restart, 
-        # but for this script we proceed hoping PATH picks it up or we use full path.
-        # For robustness, we'll assume it's okay for now or user might need to restart app.
+        try {
+            $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
+            $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+            if ($machinePath -and $userPath) {
+                $env:Path = "$machinePath;$userPath"
+            } elseif ($machinePath) {
+                $env:Path = $machinePath
+            } elseif ($userPath) {
+                $env:Path = $userPath
+            }
+        } catch {}
+
+        try {
+            $nodeVersionAfter = & node -v 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Emit-Log "Node.js installed and available: $nodeVersionAfter" "#4caf50"
+            } else {
+                $nodeExe = Join-Path $env:ProgramFiles "nodejs\node.exe"
+                if (Test-Path $nodeExe) {
+                    $nodeVersionAfter = & $nodeExe -v 2>&1
+                    Emit-Log "Node.js installed at: $nodeExe ($nodeVersionAfter)" "#4caf50"
+                } else {
+                    Emit-Log "Node.js installed but not available in PATH." "#f44747"
+                    Emit-Status "Error"
+                    return
+                }
+            }
+        } catch {
+            Emit-Log "Node.js installation completed but verification failed." "#f44747"
+            Emit-Status "Error"
+            return
+        }
     }
 
     # 2. Check Dependencies
@@ -221,17 +260,20 @@ $MainLogic = {
         Emit-Status "Installing Dependencies (this may take a while)..."
         
         $npmCmd = "npm"
-        $npmArgs = "install"
+        try {
+            $npmExe = Join-Path $env:ProgramFiles "nodejs\npm.cmd"
+            if (Test-Path $npmExe) { $npmCmd = $npmExe }
+        } catch {}
         
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "cmd.exe"
-        # Use chcp 65001 to ensure npm handles characters correctly, but cd first to avoid path issues
-        $psi.Arguments = "/c cd /d `"$ServerDir`" && chcp 65001 >NUL && npm install"
+        $psi.Arguments = "/d /s /c cd /d `"$ServerDir`" && chcp 65001 >NUL && `"$npmCmd`" install"
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
         $psi.UseShellExecute = $false
         $psi.CreateNoWindow = $true
         $psi.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        try { $psi.StandardErrorEncoding = [System.Text.Encoding]::UTF8 } catch {}
         
         $p = New-Object System.Diagnostics.Process
         $p.StartInfo = $psi

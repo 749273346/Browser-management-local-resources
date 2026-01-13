@@ -1,8 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
+const http = require('http');
 const path = require('path');
-const { exec } = require('child_process');
+const { exec, execFile } = require('child_process');
 const logger = require('./logger');
 
 const app = express();
@@ -12,6 +13,16 @@ app.use(cors());
 app.use(express.json());
 
 const isElectronRuntime = () => Boolean(process.versions && process.versions.electron);
+
+try {
+    logger.info('Boot', {
+        node: process.version,
+        platform: process.platform,
+        arch: process.arch,
+        cwd: process.cwd(),
+        electron: process.versions && process.versions.electron ? process.versions.electron : null
+    });
+} catch {}
 
 // Serve static files from the extension build directory
 const extensionDistPath = path.join(__dirname, '../extension/dist');
@@ -194,22 +205,56 @@ app.post('/api/open', async (req, res) => {
     logger.info(`Opening: ${targetPath}`);
 
     try {
-        // Check if file exists first to give a better error message
         await fs.access(targetPath);
     } catch (err) {
         logger.error(`File not found: ${targetPath}`);
         return res.status(404).json({ error: 'File does not exist' });
     }
 
-    // Use 'start' command on Windows with /MAX to open maximized and bring to front
-    // standardizing path separators
     const cleanPath = path.normalize(targetPath);
-    
-    // Use chcp 65001 to ensure proper handling of Chinese characters in file paths
-    // start "" /MAX "path" - empty string is title, required when path is quoted
-    const command = `chcp 65001 >NUL && start "" /MAX "${cleanPath}"`;
-    
-    exec(command, { encoding: 'utf8' }, (error) => {
+
+    if (process.platform === 'win32') {
+        // Try shell.openPath first if in Electron
+        if (isElectronRuntime()) {
+            try {
+                const { shell } = require('electron');
+                const result = await shell.openPath(cleanPath);
+                if (result) {
+                    logger.warn(`Electron shell.openPath failed: ${result}. Falling back to start command.`);
+                    // Fallback to start command below
+                } else {
+                    return res.json({ success: true, message: `Opened ${targetPath}` });
+                }
+            } catch (error) {
+                logger.error('Electron openPath error:', error);
+                // Fallback to start command below
+            }
+        }
+
+        // Use chcp 65001 to ensure proper handling of Chinese characters in file paths
+        // start "" /MAX "path" - empty string is title, required when path is quoted
+        const command = `chcp 65001 >NUL && start "" /MAX "${cleanPath}"`;
+        
+        return exec(command, { encoding: 'utf8' }, (error) => {
+            if (error) {
+                logger.error(`exec error: ${error}`);
+                
+                // Fallback: try rundll32 if start fails (sometimes works better for associations)
+                logger.info('Attempting fallback with rundll32...');
+                return execFile('rundll32.exe', ['url.dll,FileProtocolHandler', cleanPath], (err2) => {
+                    if (err2) {
+                        logger.error(`Fallback rundll32 error: ${err2}`);
+                        return res.status(500).json({ error: error.message + " | Fallback: " + err2.message });
+                    }
+                    return res.json({ success: true, message: `Opened ${targetPath} (fallback)` });
+                });
+            }
+            res.json({ success: true, message: `Opened ${targetPath}` });
+        });
+    }
+
+    const command = `xdg-open "${cleanPath.replace(/"/g, '\\"')}"`;
+    exec(command, (error) => {
         if (error) {
             logger.error(`exec error: ${error}`);
             return res.status(500).json({ error: error.message });
@@ -419,6 +464,23 @@ app.post('/api/settings', async (req, res) => {
 
 let server;
 
+function checkHealth(port) {
+    return new Promise((resolve) => {
+        const req = http.get(
+            { hostname: '127.0.0.1', port, path: '/health', timeout: 1000 },
+            (res) => {
+                resolve(res.statusCode === 200);
+                res.resume();
+            }
+        );
+        req.on('timeout', () => {
+            try { req.destroy(); } catch {}
+            resolve(false);
+        });
+        req.on('error', () => resolve(false));
+    });
+}
+
 const start = (port = PORT) => {
     if (server) return server;
     server = app.listen(port, () => {
@@ -426,8 +488,24 @@ const start = (port = PORT) => {
     });
     server.on('error', (err) => {
         if (err && err.code === 'EADDRINUSE') {
-            logger.warn(`Port ${port} is already in use. Assuming server already running.`);
-            server = undefined;
+            Promise.resolve()
+                .then(() => checkHealth(port))
+                .then((ok) => {
+                    if (ok) {
+                        logger.warn(`Port ${port} is already in use. Existing server is healthy.`);
+                        server = undefined;
+                        process.exit(202);
+                        return;
+                    }
+                    logger.error(`Port ${port} is already in use, and existing server is not healthy.`);
+                    server = undefined;
+                    process.exit(101);
+                })
+                .catch(() => {
+                    logger.error(`Port ${port} is already in use, and health check failed.`);
+                    server = undefined;
+                    process.exit(101);
+                });
             return;
         }
         logger.error('Server error:', err);
