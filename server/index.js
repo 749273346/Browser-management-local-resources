@@ -231,33 +231,34 @@ app.post('/api/open', async (req, res) => {
             }
         }
 
-        // Use chcp 65001 to ensure proper handling of Chinese characters in file paths
-        // start "" /MAX "path" - empty string is title, required when path is quoted
-        const command = `chcp 65001 >NUL && start "" /MAX "${cleanPath}"`;
+        // Use PowerShell to ensure window is maximized
+        // We use explorer.exe directly with -WindowStyle Maximized to guarantee the window state
+        const psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'explorer.exe' -ArgumentList \\"${cleanPath}\\" -WindowStyle Maximized"`;
         
-        return exec(command, { encoding: 'utf8' }, (error) => {
+        return exec(psCommand, { encoding: 'utf8' }, (error) => {
             if (error) {
-                logger.error(`exec error: ${error}`);
+                logger.error(`PowerShell error: ${error}`);
                 logger.error(`Error details - message: ${error.message}, code: ${error.code}, signal: ${error.signal}`);
                 
-                // Fallback 1: try PowerShell Start-Process (more reliable for complex paths)
-                logger.info('Attempting fallback with PowerShell Start-Process...');
-                const psCommand = `powershell -NoProfile -Command "Start-Process -FilePath \\"${cleanPath}\\" -Verb Open"`;
+                // Fallback 1: try cmd start
+                logger.info('Attempting fallback with cmd start...');
+                // start "" /MAX "path" - empty string is title, required when path is quoted
+                const command = `chcp 65001 >NUL && start "" /MAX "${cleanPath}"`;
                 
-                return exec(psCommand, { encoding: 'utf8' }, (psError) => {
-                    if (psError) {
-                        logger.error(`PowerShell fallback error: ${psError}`);
+                return exec(command, { encoding: 'utf8' }, (cmdError) => {
+                    if (cmdError) {
+                        logger.error(`CMD start fallback error: ${cmdError}`);
                         
-                        // Fallback 2: try rundll32 if PowerShell fails
+                        // Fallback 2: try rundll32 if CMD fails
                         logger.info('Attempting fallback with rundll32...');
                         return execFile('rundll32.exe', ['url.dll,FileProtocolHandler', cleanPath], (err2) => {
                             if (err2) {
                                 logger.error(`Fallback rundll32 error: ${err2}`);
                                 return res.status(500).json({ 
-                                    error: `All open methods failed: ${error.message} | PowerShell: ${psError.message} | rundll32: ${err2.message}`,
+                                    error: `All open methods failed: ${error.message} | CMD: ${cmdError.message} | rundll32: ${err2.message}`,
                                     details: {
                                         originalError: error.message,
-                                        powerShellError: psError.message,
+                                        cmdError: cmdError.message,
                                         rundll32Error: err2.message,
                                         attemptedPath: cleanPath
                                     }
@@ -266,7 +267,7 @@ app.post('/api/open', async (req, res) => {
                             return res.json({ success: true, message: `Opened ${targetPath} (rundll32 fallback)` });
                         });
                     }
-                    return res.json({ success: true, message: `Opened ${targetPath} (PowerShell fallback)` });
+                    return res.json({ success: true, message: `Opened ${targetPath} (CMD fallback)` });
                 });
             }
             res.json({ success: true, message: `Opened ${targetPath}` });
