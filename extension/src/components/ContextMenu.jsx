@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { FolderPlus, FilePlus, RefreshCw, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText, Copy, Clipboard } from 'lucide-react';
+import { FolderPlus, FilePlus, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText, Copy, Clipboard } from 'lucide-react';
 import { COLUMN_COLORS } from '../constants/theme';
 
 export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard }) {
@@ -118,13 +118,13 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
                  <div className="h-px bg-gray-200 dark:bg-slate-700 my-2 mx-[-12px]"></div>
              </div>
           )}
-          <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />
           <MenuItem icon={Copy} label="复制 (Copy)" onClick={() => onAction('copy', file)} />
           <MenuItem 
             icon={fileHidden ? Eye : EyeOff} 
             label={fileHidden ? "取消停运 (Restore)" : "停运/隐藏 (Ignore)"} 
             onClick={() => onAction('hide', file)} 
           />
+          <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />
           <MenuItem icon={Info} label="属性 (Properties)" onClick={() => onAction('properties', file)} />
           <Separator />
           <MenuItem icon={Trash2} label="删除 (Delete)" onClick={() => onAction('delete', file)} danger />
@@ -140,9 +140,6 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
           <MenuItem icon={FileType} label="Word 文档 (.docx)" onClick={() => onAction('new-file-docx')} />
           <MenuItem icon={FileSpreadsheet} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx')} />
           <MenuItem icon={FilePlus} label="PPT 演示文稿 (.pptx)" onClick={() => onAction('new-file-pptx')} />
-          
-          <Separator />
-          <MenuItem icon={RefreshCw} label="刷新 (Refresh)" onClick={() => onAction('refresh')} />
         </>
       )}
     </div>

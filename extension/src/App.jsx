@@ -482,9 +482,6 @@ function App() {
               setRenamingName(name);
           } else if (action === 'properties') {
               alert(`名称: ${file.name}\n路径: ${file.path}\n类型: ${file.isDirectory ? '文件夹' : '文件'}`);
-          } else if (action === 'refresh') {
-              fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
-              showToast('已刷新');
           } else if (action === 'copy') {
               setClipboard({ path: file.path, name: file.name, isDirectory: file.isDirectory });
               showToast('已复制');
