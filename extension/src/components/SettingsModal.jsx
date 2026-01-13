@@ -131,13 +131,21 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
       // Save empty string to localStorage if "none" or empty
       localStorage.setItem('bgImage', normalized);
 
+      let newCustomWallpapers = customWallpapers;
+
       if (normalized && normalized.startsWith('data:')) {
           setCustomWallpapers(prev => {
               const next = prev.includes(normalized) ? prev : [normalized, ...prev].slice(0, 18);
               localStorage.setItem('customWallpapers', JSON.stringify(next));
+              newCustomWallpapers = next;
               return next;
           });
       }
+      
+      saveSettingsToServer({ 
+          bgImage: normalized,
+          customWallpapers: newCustomWallpapers
+      }).catch(err => console.error('Failed to sync background settings:', err));
       
       // Feedback
       // In a real app we'd use a toast. For now, we can maybe use a small state or just reliance on visual change.
@@ -154,12 +162,14 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
   const handleThemeChange = (themeKey) => {
       applyTheme(themeKey);
       setCurrentTheme(themeKey);
+      saveSettingsToServer({ appTheme: themeKey }).catch(err => console.error('Failed to sync theme settings:', err));
   };
 
   const handleModeChange = (mode) => {
       const resolved = applyColorMode(mode);
       setColorMode(resolved);
       applyTheme(currentTheme);
+      saveSettingsToServer({ colorMode: resolved }).catch(err => console.error('Failed to sync color mode settings:', err));
   };
 
   const handleDeleteWallpaper = (url) => {
@@ -202,6 +212,7 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
       root.style.setProperty('--bg-image', 'none');
       setBgImage('');
       localStorage.setItem('bgImage', '');
+      saveSettingsToServer({ bgImage: '' }).catch(err => console.error('Failed to sync background settings:', err));
 
       if (tempBgImage === sourceUrl || tempBgImage) {
           setTempBgImage('');
