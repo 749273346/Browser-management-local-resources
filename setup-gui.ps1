@@ -225,7 +225,8 @@ $MainLogic = {
         
         $psi = New-Object System.Diagnostics.ProcessStartInfo
         $psi.FileName = "cmd.exe"
-        $psi.Arguments = "/c cd /d `"$ServerDir`" && npm install"
+        # Use chcp 65001 to ensure npm handles characters correctly, but cd first to avoid path issues
+        $psi.Arguments = "/c cd /d `"$ServerDir`" && chcp 65001 >NUL && npm install"
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
         $psi.UseShellExecute = $false
@@ -259,6 +260,23 @@ $MainLogic = {
 
     # 3. Start Service
     Emit-Status "Starting Service..."
+    
+    # Check and clear port 3001 if occupied (fix for zombie processes)
+    try {
+        $port = 3001
+        $connections = Get-NetTCPConnection -LocalPort $port -ErrorAction SilentlyContinue
+        if ($connections) {
+            foreach ($conn in $connections) {
+                $pidToKill = $conn.OwningProcess
+                Emit-Log "Port $port is occupied by PID $pidToKill. Killing zombie process..." "#ce9178"
+                Stop-Process -Id $pidToKill -Force -ErrorAction SilentlyContinue
+            }
+            Start-Sleep -Seconds 2
+        }
+    } catch {
+        Emit-Log "Warning: Failed to check port usage. Proceeding..." "#808080"
+    }
+
     Emit-Log "Launching background service..."
     
     $vbsPath = Join-Path $RootDir "start-server-hidden.vbs"
@@ -300,6 +318,26 @@ $MainLogic = {
     } else {
         Emit-Log "Service failed to start responding." "#f44747"
         Emit-Status "Timeout"
+        
+        # Try to read logs for diagnosis
+        $logDir = "$env:APPDATA\LocalResourceManager\logs"
+        if (Test-Path $logDir) {
+            $latestLog = Get-ChildItem $logDir -Filter "app-*.log" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($latestLog) {
+                Emit-Log "Found log file: $($latestLog.Name)" "#ce9178"
+                Emit-Log "--- Tail of log ---" "#ce9178"
+                try {
+                    Get-Content $latestLog.FullName -Tail 20 -ErrorAction Stop | ForEach-Object { Emit-Log $_ "#808080" }
+                } catch {
+                    Emit-Log "Could not read log file." "#f44747"
+                }
+            } else {
+                 Emit-Log "No log files found in $logDir" "#ce9178"
+            }
+        } else {
+             Emit-Log "Log directory not found: $logDir" "#ce9178"
+             Emit-Log "This suggests the service process didn't start at all." "#ce9178"
+        }
     }
 }
 

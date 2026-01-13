@@ -184,7 +184,7 @@ app.get('/api/files', async (req, res) => {
 });
 
 // API to open explorer
-app.post('/api/open', (req, res) => {
+app.post('/api/open', async (req, res) => {
     const { path: targetPath } = req.body;
     
     if (!targetPath) {
@@ -193,13 +193,23 @@ app.post('/api/open', (req, res) => {
 
     logger.info(`Opening: ${targetPath}`);
 
+    try {
+        // Check if file exists first to give a better error message
+        await fs.access(targetPath);
+    } catch (err) {
+        logger.error(`File not found: ${targetPath}`);
+        return res.status(404).json({ error: 'File does not exist' });
+    }
+
     // Use 'start' command on Windows with /MAX to open maximized and bring to front
     // standardizing path separators
     const cleanPath = path.normalize(targetPath);
-    // start "" /MAX "path" - empty string is title, required when path is quoted
-    const command = `start "" /MAX "${cleanPath}"`;
     
-    exec(command, (error) => {
+    // Use chcp 65001 to ensure proper handling of Chinese characters in file paths
+    // start "" /MAX "path" - empty string is title, required when path is quoted
+    const command = `chcp 65001 >NUL && start "" /MAX "${cleanPath}"`;
+    
+    exec(command, { encoding: 'utf8' }, (error) => {
         if (error) {
             logger.error(`exec error: ${error}`);
             return res.status(500).json({ error: error.message });
