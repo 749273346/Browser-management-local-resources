@@ -537,6 +537,8 @@ function App() {
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
                     folderColors={folderColors}
+                    renamingName={renamingName}
+                    onRenameSubmit={handleRenameSubmit}
                 />
             ) : currentViewMode === 'grid' ? (
                 <FileGrid 

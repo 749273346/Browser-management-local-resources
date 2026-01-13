@@ -1,9 +1,18 @@
 {
-  "rootPath": "D:\\",
+  "rootPath": "C:\\Users\\74927\\Desktop\\测试资源库",
   "folderColors": {
     "d:/调度台": "red",
     "d:/工时统计": "orange",
-    "d:/system volume information": "yellow"
+    "d:/system volume information": "yellow",
+    "c:/users/74927/desktop/测试资源库/安全管理": "red",
+    "c:/users/74927/desktop/测试资源库/表格数据": "orange",
+    "c:/users/74927/desktop/测试资源库/多媒体": "yellow",
+    "c:/users/74927/desktop/测试资源库/深层目录": "green",
+    "c:/users/74927/desktop/测试资源库/生产管理": "cyan",
+    "c:/users/74927/desktop/测试资源库/图片素材": "blue",
+    "c:/users/74927/desktop/测试资源库/文档资料": "purple",
+    "c:/users/74927/desktop/测试资源库/项目文件": "gray",
+    "c:/users/74927/desktop/测试资源库/综合管理": "red"
   },
   "folderViewModes": {
     "C:\\Users\\74927\\Desktop\\测试资源库": "dashboard",

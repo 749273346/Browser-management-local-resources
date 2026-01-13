@@ -17,9 +17,35 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function DashboardView({ files, onNavigate, onContextMenu, isHidden, folderColors = {} }) {
+export default function DashboardView({ files, onNavigate, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit }) {
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
+
+    const RenameInput = ({ file, className }) => (
+        <input
+            autoFocus
+            type="text"
+            defaultValue={file.name}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                    onRenameSubmit(file, e.target.value);
+                } else if (e.key === 'Escape') {
+                    onRenameSubmit(file, file.name); // Cancel
+                }
+            }}
+            onBlur={(e) => onRenameSubmit(file, e.target.value)}
+            onFocus={(e) => {
+                const dotIndex = file.name.lastIndexOf('.');
+                if (dotIndex > 0 && !file.isDirectory) {
+                    e.target.setSelectionRange(0, dotIndex);
+                } else {
+                    e.target.select();
+                }
+            }}
+            className={`text-sm px-1 py-0.5 border border-primary-500 rounded bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-0 ${className}`}
+        />
+    );
 
     return (
         <div className="flex flex-col h-full p-6 space-y-6">
@@ -35,18 +61,24 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                         {looseFiles.map((file, i) => {
                             const hidden = isHidden ? isHidden(file.path) : false;
+                            const isRenaming = renamingName === file.name;
                             return (
                                 <div
                                     key={i}
-                                    onClick={() => onNavigate(file)}
+                                    onClick={() => !isRenaming && onNavigate(file)}
                                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, file); }}
                                     className={`
                                         group flex items-center p-2 rounded-lg cursor-pointer transition-all
                                         ${hidden ? 'opacity-50 grayscale border-dashed border border-gray-300' : 'bg-white/60 dark:bg-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md'}
+                                        ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
                                     `}
                                 >
                                     <div className="mr-3">{getFileIcon(file.name, false)}</div>
-                                    <span className="text-sm text-gray-700 dark:text-slate-200 font-medium truncate flex-1">{file.name}</span>
+                                    {isRenaming ? (
+                                        <RenameInput file={file} className="flex-1 w-full min-w-0" />
+                                    ) : (
+                                        <span className="text-sm text-gray-700 dark:text-slate-200 font-medium truncate flex-1">{file.name}</span>
+                                    )}
                                 </div>
                             );
                         })}
@@ -64,6 +96,7 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                         
                         const hidden = isHidden ? isHidden(folder.path) : false;
                         const children = folder.children || [];
+                        const isFolderRenaming = renamingName === folder.name;
 
                         return (
                             <div 
@@ -87,14 +120,20 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                         borderTopLeftRadius: 'var(--radius-card)', 
                                         borderTopRightRadius: 'var(--radius-card)' 
                                     }}
-                                    onClick={() => onNavigate(folder)}
+                                    onClick={() => !isFolderRenaming && onNavigate(folder)}
                                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, folder); }}
                                 >
-                                    <h3 className={`text-lg font-bold ${color.text} truncate flex-1 flex items-center`}>
-                                        {folder.name}
-                                        {hidden && <EyeOff size={16} className="ml-2 opacity-50"/>}
-                                    </h3>
-                                    <ChevronRight size={20} className={`${color.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                    {isFolderRenaming ? (
+                                        <RenameInput file={folder} className="flex-1 w-full text-lg font-bold" />
+                                    ) : (
+                                        <h3 className={`text-lg font-bold ${color.text} truncate flex-1 flex items-center`}>
+                                            {folder.name}
+                                            {hidden && <EyeOff size={16} className="ml-2 opacity-50"/>}
+                                        </h3>
+                                    )}
+                                    {!isFolderRenaming && (
+                                        <ChevronRight size={20} className={`${color.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                    )}
                                 </div>
 
                                 {/* Column Content (List) */}
@@ -102,12 +141,13 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                     {children.length > 0 ? (
                                         children.map((child, childIndex) => {
                                             const childHidden = isHidden ? isHidden(child.path) : false;
+                                            const isChildRenaming = renamingName === child.name;
                                             return (
                                                 <div
                                                     key={childIndex}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        onNavigate(child);
+                                                        if (!isChildRenaming) onNavigate(child);
                                                     }}
                                                     onContextMenu={(e) => {
                                                         e.preventDefault();
@@ -117,15 +157,20 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                                     className={`
                                                         flex items-center p-3 rounded-xl cursor-pointer transition-all border
                                                         ${childHidden ? 'opacity-50 grayscale border-dashed border-gray-400' : 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:-translate-y-0.5'}
+                                                        ${isChildRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
                                                     `}
                                                 >
                                                     <div className="mr-3 text-gray-500 dark:text-slate-400">
                                                         {getFileIcon(child.name, child.isDirectory)}
                                                     </div>
-                                                    <span className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate flex-1">
-                                                        {child.name}
-                                                    </span>
-                                                    {child.isDirectory && (
+                                                    {isChildRenaming ? (
+                                                        <RenameInput file={child} className="flex-1 w-full min-w-0" />
+                                                    ) : (
+                                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate flex-1">
+                                                            {child.name}
+                                                        </span>
+                                                    )}
+                                                    {child.isDirectory && !isChildRenaming && (
                                                         <ChevronRight size={14} className="text-gray-400" />
                                                     )}
                                                 </div>
