@@ -216,21 +216,12 @@ app.whenReady().then(() => {
   app.on('second-instance', (event, commandLine, workingDirectory) => {
     // Log the attempt for debugging
     try {
-      logger.info('Second instance detected', { commandLine, workingDirectory });
+      logger.info('Second instance detected - showing main window', { commandLine, workingDirectory });
     } catch {}
 
-    // Only show window if explicitly requested via --open flag
-    // This prevents auto-popup when extensions or scripts try to restart the service silently (or without args)
-    const shouldShow = commandLine.some(arg => 
-      arg.includes('--show') || 
-      arg.includes('--open') ||
-      arg.includes('/show') || 
-      arg.includes('/open')
-    );
-
-    if (shouldShow) {
-      showMainWindow();
-    }
+    // Always show window when second instance is detected
+    // Removed restriction that required --show/--open flags
+    showMainWindow();
   });
 });
 
