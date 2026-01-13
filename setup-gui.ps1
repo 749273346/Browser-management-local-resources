@@ -331,18 +331,45 @@ $MainLogic = {
     $maxRetries = 30
     $retry = 0
     $healthy = $false
+    $healthUrls = @(
+        $HealthUrl,
+        "http://localhost:3001/health",
+        "http://[::1]:3001/health"
+    )
+    $lastErrorSummary = $null
     
     while ($retry -lt $maxRetries) {
-        try {
-            $resp = Invoke-WebRequest -Uri $HealthUrl -UseBasicParsing -TimeoutSec 1 -ErrorAction Stop
-            if ($resp.StatusCode -eq 200) {
-                $healthy = $true
-                break
+        foreach ($u in $healthUrls) {
+            try {
+                $resp = Invoke-WebRequest -Uri $u -UseBasicParsing -TimeoutSec 2 -Proxy $null -ErrorAction Stop
+                if ($resp.StatusCode -eq 200) {
+                    $healthy = $true
+                    break
+                }
+                $lastErrorSummary = "HTTP $($resp.StatusCode) from $u"
+            } catch {
+                $statusCode = $null
+                try {
+                    if ($_.Exception -and $_.Exception.Response -and $_.Exception.Response.StatusCode) {
+                        $statusCode = [int]$_.Exception.Response.StatusCode
+                    }
+                } catch {}
+                if ($statusCode -ne $null) {
+                    $lastErrorSummary = "HTTP $statusCode from $u"
+                } else {
+                    $lastErrorSummary = "${u}: $($_.Exception.Message)"
+                }
             }
-        } catch {
-            Start-Sleep -Seconds 1
-            $retry++
-            if ($retry % 5 -eq 0) { Emit-Log "Waiting... ($retry/$maxRetries)" }
+            if ($healthy) { break }
+        }
+
+        if ($healthy) { break }
+
+        Start-Sleep -Seconds 1
+        $retry++
+        if ($retry % 5 -eq 0) {
+            if ($lastErrorSummary) { Emit-Log "Waiting... ($retry/$maxRetries) Last: $lastErrorSummary" }
+            else { Emit-Log "Waiting... ($retry/$maxRetries)" }
         }
     }
     
