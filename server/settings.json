@@ -1,18 +1,20 @@
 {
-  "rootPath": "C:\\Users\\74927\\Desktop\\测试资源库",
+  "rootPath": "D:\\",
   "folderColors": {
+    "d:/工时统计": "red",
+    "d:/browser-management-local-resources": "orange",
+    "d:/system volume information": "yellow",
     "c:/users/74927/desktop/测试资源库/安全管理": "red",
     "c:/users/74927/desktop/测试资源库/表格数据": "orange",
     "c:/users/74927/desktop/测试资源库/多媒体": "yellow",
-    "c:/users/74927/desktop/测试资源库/深层目录": "green",
-    "c:/users/74927/desktop/测试资源库/生产管理": "cyan",
-    "c:/users/74927/desktop/测试资源库/图片素材": "blue",
-    "c:/users/74927/desktop/测试资源库/文档资料": "purple",
-    "c:/users/74927/desktop/测试资源库/项目文件": "gray",
-    "c:/users/74927/desktop/测试资源库/综合管理": "red",
     "c:/users/74927/desktop/测试资源库/多媒体 - 副本": "green",
-    "c:/users/74927/desktop/测试资源库/综合管理 - 副本": "yellow",
-    "c:/users/74927/desktop/测试资源库": "red"
+    "c:/users/74927/desktop/测试资源库/深层目录": "cyan",
+    "c:/users/74927/desktop/测试资源库/生产管理": "blue",
+    "c:/users/74927/desktop/测试资源库/图片素材": "purple",
+    "c:/users/74927/desktop/测试资源库/文档资料": "gray",
+    "c:/users/74927/desktop/测试资源库/项目文件": "red",
+    "c:/users/74927/desktop/测试资源库/综合管理": "orange",
+    "c:/users/74927/desktop/测试资源库/综合管理 - 副本": "yellow"
   },
   "folderViewModes": {
     "C:\\Users\\74927\\Desktop\\测试资源库": "dashboard",
