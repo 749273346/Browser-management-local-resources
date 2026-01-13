@@ -190,10 +190,6 @@ function createTray() {
   tray.on('double-click', () => {
     showMainWindow();
   });
-  
-  tray.on('click', () => {
-    showMainWindow();
-  });
 }
 
 function startServer() {
@@ -211,13 +207,10 @@ function startServer() {
 app.whenReady().then(() => {
   logger.info('App ready');
   startServer();
-  createWindow();
   createTray();
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
+    return;
   });
   
   app.on('second-instance', (event, commandLine, workingDirectory) => {
@@ -235,10 +228,8 @@ app.whenReady().then(() => {
       arg.includes('/open')
     );
 
-    if (mainWindow && shouldShow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.show();
-      mainWindow.focus();
+    if (shouldShow) {
+      showMainWindow();
     }
   });
 });
