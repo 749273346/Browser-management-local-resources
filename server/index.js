@@ -94,7 +94,14 @@ const getFilesRecursive = async (dir, currentDepth, maxDepth) => {
             const isDirectory = entry.isDirectory();
             let isEmpty = false;
             let children = [];
+            let stats = {};
             
+            try {
+                stats = await fs.stat(fullPath);
+            } catch (e) {
+                // Ignore stat errors
+            }
+
             if (isDirectory) {
                 try {
                     // Check if empty
@@ -115,7 +122,9 @@ const getFilesRecursive = async (dir, currentDepth, maxDepth) => {
                 isDirectory,
                 path: fullPath,
                 isEmpty,
-                children
+                children,
+                size: stats.size || 0,
+                mtimeMs: stats.mtimeMs || 0
             };
         }));
         

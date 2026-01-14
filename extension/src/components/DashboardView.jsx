@@ -137,7 +137,14 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                 </div>
 
                                 {/* Column Content (List) */}
-                                <div className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2">
+                                <div 
+                                    className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2"
+                                    onContextMenu={(e) => { 
+                                        e.preventDefault(); 
+                                        e.stopPropagation(); 
+                                        if(onContextMenu) onContextMenu(e, folder); 
+                                    }}
+                                >
                                     {children.length > 0 ? (
                                         children.map((child, childIndex) => {
                                             const childHidden = isHidden ? isHidden(child.path) : false;

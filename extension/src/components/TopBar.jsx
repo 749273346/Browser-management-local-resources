@@ -1,11 +1,29 @@
-import { Settings, Train, ChevronRight, LayoutGrid, List, Eye, EyeOff, Kanban } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { Settings, Train, ChevronRight, LayoutGrid, List, Eye, EyeOff, Kanban, ArrowUpDown, Check } from 'lucide-react';
 import Button from './Button';
 import SearchBar from './SearchBar';
 
-export default function TopBar({ currentPath, onNavigate, onReset, onOpenSettings, viewMode, onToggleView, showHidden, onToggleHidden }) {
+export default function TopBar({ currentPath, onNavigate, onReset, onOpenSettings, viewMode, onToggleView, showHidden, onToggleHidden, sortConfig, onSortChange }) {
   // Normalize path to use forward slashes for easier splitting, but keep track of original separator if possible
   // Actually, for display, just splitting by either is fine.
   const parts = currentPath ? currentPath.split(/[\\/]/).filter(Boolean) : [];
+
+  const [isSortOpen, setIsSortOpen] = useState(false);
+  const sortRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (sortRef.current && !sortRef.current.contains(event.target)) {
+        setIsSortOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleSortChange = (key) => {
+    onSortChange({ ...sortConfig, key });
+  };
   
   const getNextViewMode = () => {
     if (viewMode === 'dashboard') return 'grid';
@@ -112,6 +130,66 @@ export default function TopBar({ currentPath, onNavigate, onReset, onOpenSetting
         >
             {getViewIcon()}
         </Button>
+
+        <div className="relative" ref={sortRef}>
+            <Button
+                onClick={() => setIsSortOpen(!isSortOpen)}
+                variant={isSortOpen ? 'active' : 'secondary'}
+                size="icon"
+                title="排序"
+            >
+                <ArrowUpDown size={20} />
+            </Button>
+            
+            {isSortOpen && sortConfig && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl shadow-lg border border-white/20 dark:border-slate-700/50 py-1 z-50 animate-in fade-in zoom-in-95 duration-200">
+                    <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                        排序方式
+                    </div>
+                    {[
+                        { key: 'name', label: '名称' },
+                        { key: 'date', label: '修改日期' },
+                        { key: 'type', label: '类型' },
+                        { key: 'size', label: '大小' }
+                    ].map(option => (
+                        <button
+                            key={option.key}
+                            onClick={() => {
+                                handleSortChange(option.key);
+                                setIsSortOpen(false);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 text-gray-700 dark:text-slate-200 transition-colors"
+                        >
+                            <span>{option.label}</span>
+                            {sortConfig.key === option.key && (
+                                <Check size={16} className="text-primary-600" />
+                            )}
+                        </button>
+                    ))}
+                    <div className="my-1 border-t border-gray-200 dark:border-slate-700/50"></div>
+                    <button
+                         onClick={() => {
+                             onSortChange({ ...sortConfig, direction: 'asc' });
+                             setIsSortOpen(false);
+                         }}
+                         className="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 text-gray-700 dark:text-slate-200 transition-colors"
+                    >
+                        <span>升序</span>
+                        {sortConfig.direction === 'asc' && <Check size={16} className="text-primary-600" />}
+                    </button>
+                    <button
+                         onClick={() => {
+                             onSortChange({ ...sortConfig, direction: 'desc' });
+                             setIsSortOpen(false);
+                         }}
+                         className="w-full text-left px-4 py-2 text-sm flex items-center justify-between hover:bg-black/5 dark:hover:bg-white/5 text-gray-700 dark:text-slate-200 transition-colors"
+                    >
+                        <span>降序</span>
+                        {sortConfig.direction === 'desc' && <Check size={16} className="text-primary-600" />}
+                    </button>
+                </div>
+            )}
+        </div>
 
         <Button 
             onClick={onOpenSettings}

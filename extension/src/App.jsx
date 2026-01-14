@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useFileSystem } from './hooks/useFileSystem'
 import { useHiddenFiles } from './hooks/useHiddenFiles'
 import WelcomeScreen from './components/WelcomeScreen'
@@ -209,6 +209,52 @@ function App() {
   // We need to clone the files array to avoid mutating state directly when filtering children
   const visibleFiles = filterFiles(JSON.parse(JSON.stringify(files)));
 
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState(() => {
+      try {
+          return JSON.parse(localStorage.getItem('sortConfig')) || { key: 'name', direction: 'asc' };
+      } catch {
+          return { key: 'name', direction: 'asc' };
+      }
+  });
+
+  useEffect(() => {
+      localStorage.setItem('sortConfig', JSON.stringify(sortConfig));
+  }, [sortConfig]);
+
+  const sortedFiles = useMemo(() => {
+      const sortList = (list) => {
+          return list.sort((a, b) => {
+              // Always put folders first
+              if (a.isDirectory && !b.isDirectory) return -1;
+              if (!a.isDirectory && b.isDirectory) return 1;
+              
+              const { key, direction } = sortConfig;
+              const multiplier = direction === 'asc' ? 1 : -1;
+              
+              if (key === 'name') {
+                  return a.name.localeCompare(b.name, 'zh-CN') * multiplier;
+              } else if (key === 'date') {
+                  return ((a.mtimeMs || 0) - (b.mtimeMs || 0)) * multiplier;
+              } else if (key === 'size') {
+                  return ((a.size || 0) - (b.size || 0)) * multiplier;
+              } else if (key === 'type') {
+                   const typeA = a.isDirectory ? 'folder' : (a.name.split('.').pop() || '');
+                   const typeB = b.isDirectory ? 'folder' : (b.name.split('.').pop() || '');
+                   return typeA.localeCompare(typeB) * multiplier;
+              }
+              return 0;
+          }).map(item => {
+              if (item.children) {
+                  item.children = sortList(item.children);
+              }
+              return item;
+          });
+      };
+      
+      return sortList([...visibleFiles]);
+  }, [visibleFiles, sortConfig]);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   // Try to get path from URL params first (for multi-tab nav), then localStorage
@@ -385,10 +431,11 @@ function App() {
 
   const handleNavigate = (file) => {
     // If folder is empty, open in system explorer directly
-    if (file.isDirectory && file.isEmpty) {
-      openInExplorer(file.path);
-      return;
-    }
+    // MODIFIED: Allow entering empty folders
+    // if (file.isDirectory && file.isEmpty) {
+    //   openInExplorer(file.path);
+    //   return;
+    // }
 
     if (file.isDirectory) {
       // Update URL for persistence (supports refresh)
@@ -507,8 +554,25 @@ function App() {
           } else if (action === 'new-folder') {
               const baseName = '新建文件夹';
               const name = getUniqueName(baseName);
-              const separator = path.includes('/') ? '/' : '\\';
-              const newPath = `${path}${separator}${name}`;
+              
+              let targetPath = path;
+              if (file) {
+                  // If right-clicked a directory (e.g. Kanban column), create inside it
+                  // If right-clicked a file, create in its parent
+                  if (file.isDirectory) {
+                      targetPath = file.path;
+                  } else {
+                      // Get parent path
+                      const p = file.path;
+                      const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+                      if (idx !== -1) {
+                          targetPath = p.substring(0, idx);
+                      }
+                  }
+              }
+
+              const separator = targetPath.includes('/') ? '/' : '\\';
+              const newPath = `${targetPath}${separator}${name}`;
               
               await createFolder(newPath);
               await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
@@ -534,8 +598,22 @@ function App() {
               const baseName = `新建${typeNameMap[type] || '文件'}`;
               
               const name = getUniqueName(baseName, ext);
-              const separator = path.includes('/') ? '/' : '\\';
-              const newPath = `${path}${separator}${name}`;
+              
+              let targetPath = path;
+              if (file) {
+                  if (file.isDirectory) {
+                      targetPath = file.path;
+                  } else {
+                      const p = file.path;
+                      const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+                      if (idx !== -1) {
+                          targetPath = p.substring(0, idx);
+                      }
+                  }
+              }
+
+              const separator = targetPath.includes('/') ? '/' : '\\';
+              const newPath = `${targetPath}${separator}${name}`;
               
               await createFile(newPath);
               await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
@@ -603,6 +681,8 @@ function App() {
         onToggleView={handleToggleView}
         showHidden={showHidden}
         onToggleHidden={toggleShowHidden}
+        sortConfig={sortConfig}
+        onSortChange={setSortConfig}
       />
 
       <div className="flex-1 overflow-y-auto custom-scrollbar relative z-0">
@@ -626,7 +706,7 @@ function App() {
           <>
             {currentViewMode === 'dashboard' ? (
                 <DashboardView 
-                    files={visibleFiles} 
+                    files={sortedFiles} 
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
@@ -636,7 +716,7 @@ function App() {
                 />
             ) : currentViewMode === 'grid' ? (
                 <FileGrid 
-                    files={visibleFiles} 
+                    files={sortedFiles} 
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
@@ -646,7 +726,7 @@ function App() {
                 />
             ) : (
                 <FileList 
-                    files={visibleFiles} 
+                    files={sortedFiles} 
                     onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     depth={depth}
@@ -657,7 +737,7 @@ function App() {
                 />
             )}
             
-            {visibleFiles.length === 0 && !loading && currentViewMode !== 'dashboard' && (
+            {sortedFiles.length === 0 && !loading && currentViewMode !== 'dashboard' && (
                 <div className="flex flex-col items-center justify-center h-64 text-gray-500 bg-white/30 backdrop-blur-sm rounded-2xl mx-8 mt-8 border border-white/20">
                     <span className="text-lg">暂无物资</span>
                 </div>
