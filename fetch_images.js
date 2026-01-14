@@ -3,16 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-const IMAGES = [
-    {
-        pageUrl: 'https://commons.wikimedia.org/wiki/File:China_Railways_SS6B-6002_in_Guangzhou_Railway_Museum_20220520-01.jpg',
-        filename: 'gz_museum_ss6b.jpg'
-    },
-    {
-        pageUrl: 'https://commons.wikimedia.org/wiki/File:Building_Huizhounan.jpg',
-        filename: 'huizhou_station_old.jpg'
-    }
-];
+const IMAGES = [];
 
 const DOWNLOAD_DIR = path.join(__dirname, 'extension', 'public', 'wallpapers');
 

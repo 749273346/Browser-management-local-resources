@@ -31,14 +31,6 @@ const PRESET_WALLPAPERS = [
   {
     name: '复兴号 (智能动车组 CR400AF-Z)',
     url: '/wallpapers/gz_hsr_fuxing.jpg?v=2'
-  },
-  {
-    name: '广铁历史博物馆 (SS6B型电力机车)',
-    url: '/wallpapers/gz_museum_ss6b.jpg'
-  },
-  {
-    name: '惠州铁路历史 (惠州南站旧址)',
-    url: '/wallpapers/huizhou_station_old.jpg'
   }
 ];
 

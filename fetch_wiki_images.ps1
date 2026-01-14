@@ -1,14 +1,5 @@
 
-$images = @(
-    @{
-        Url = "https://commons.wikimedia.org/wiki/File:China_Railways_SS6B-6002_in_Guangzhou_Railway_Museum_20220520-01.jpg"
-        Output = "gz_museum_ss6b.jpg"
-    },
-    @{
-        Url = "https://commons.wikimedia.org/wiki/File:Building_Huizhounan.jpg"
-        Output = "huizhou_station_old.jpg"
-    }
-)
+$images = @()
 
 $destDir = "extension/public/wallpapers"
 if (!(Test-Path $destDir)) {
