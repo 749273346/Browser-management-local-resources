@@ -373,10 +373,15 @@ function App() {
   };
   
   const handleReset = () => {
-      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.update) {
-           chrome.tabs.update({ url: 'index.html' });
+      const rootPath = localStorage.getItem('rootPath');
+      if (rootPath) {
+          handlePathNavigate(rootPath);
       } else {
-          window.location.href = 'index.html';
+          if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.update) {
+               chrome.tabs.update({ url: 'index.html' });
+          } else {
+              window.location.href = 'index.html';
+          }
       }
   };
 
