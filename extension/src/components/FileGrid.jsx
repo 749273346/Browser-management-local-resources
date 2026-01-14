@@ -35,7 +35,7 @@ const getFileIcon = (name, isDirectory, color = null) => {
     }
 };
 
-export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, renamingName, onRenameSubmit, folderColors }) {
+export default function FileGrid({ files, onContextMenu, isHidden, renamingName, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {
   return (
     <div className="flex flex-col h-full">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 p-6">
@@ -43,11 +43,13 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, r
             const hidden = isHidden ? isHidden(file.path) : false;
             const isRenaming = renamingName === file.name;
             const colorScheme = file.isDirectory ? getEffectiveColorScheme(file.path, folderColors) : null;
+            const isSelected = selectedPaths && selectedPaths.has(file.path);
             
             return (
                 <div 
                 key={i}
-                onClick={() => !isRenaming && onNavigate(file)}
+                onClick={(e) => !isRenaming && onFileClick && onFileClick(e, file)}
+                onDoubleClick={(e) => !isRenaming && onFileDoubleClick && onFileDoubleClick(e, file)}
                 onContextMenu={(e) => {
                     e.preventDefault(); // Prevent default context menu
                     e.stopPropagation(); // Stop propagation to parent
@@ -57,7 +59,9 @@ export default function FileGrid({ files, onNavigate, onContextMenu, isHidden, r
                     group flex flex-col items-center shadow-sm glass-effect
                     hover:shadow-xl hover:border-primary-200 dark:hover:border-primary-500/40 cursor-pointer transition-all duration-300 ease-out
                     ${!isRenaming && 'hover:-translate-y-1'}
-                    ${hidden ? 'opacity-40 grayscale border-dashed' : 'hover:bg-white/60 dark:hover:bg-slate-800/60'}
+                    ${hidden ? 'opacity-40 grayscale border-dashed' : ''}
+                    ${!isSelected && !hidden ? 'hover:bg-white/60 dark:hover:bg-slate-800/60' : ''}
+                    ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700 ring-1 ring-primary-300 dark:ring-primary-700' : ''}
                     ${isRenaming ? 'ring-2 ring-primary-500 bg-white dark:bg-slate-800 !opacity-100' : ''}
                     ${colorScheme ? `${colorScheme.bg} ${colorScheme.border}` : ''}
                 `}

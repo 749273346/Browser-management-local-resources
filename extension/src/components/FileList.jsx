@@ -30,7 +30,7 @@ const getFileIcon = (name, isDirectory, color = null) => {
     }
 };
 
-export default function FileList({ files, onNavigate, onContextMenu, depth, isHidden, renamingName, onRenameSubmit, folderColors }) {
+export default function FileList({ files, onContextMenu, depth, isHidden, renamingName, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {
   return (
     <div className="flex flex-col pb-2">
       <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider glass-effect sticky top-0 z-10">
@@ -42,25 +42,29 @@ export default function FileList({ files, onNavigate, onContextMenu, depth, isHi
           const hidden = isHidden ? isHidden(file.path) : false;
           const isRenaming = renamingName === file.name;
           const colorScheme = file.isDirectory ? getEffectiveColorScheme(file.path, folderColors) : null;
+          const isSelected = selectedPaths && selectedPaths.has(file.path);
 
           return (
               <div 
               key={i}
-              onClick={() => !isRenaming && onNavigate(file)}
+              onClick={(e) => !isRenaming && onFileClick && onFileClick(e, file)}
+              onDoubleClick={(e) => !isRenaming && onFileDoubleClick && onFileDoubleClick(e, file)}
               onContextMenu={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   if (onContextMenu) onContextMenu(e, file);
               }}
               className={`group flex items-center p-3 cursor-pointer transition-colors border hover:border-white/40 dark:hover:border-white/10
-                ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 dark:border-slate-700 hover:bg-white/30 dark:hover:bg-slate-800/40' : 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60'}
+                ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 dark:border-slate-700 hover:bg-white/30 dark:hover:bg-slate-800/40' : ''}
+                ${!isSelected && !hidden ? 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60' : ''}
+                ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700' : ''}
                 ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
                 ${colorScheme ? `${colorScheme.bg} ${colorScheme.border}` : ''}
               `}
               style={{
                 borderRadius: 'var(--radius-input)',
                 borderWidth: 'var(--border-width)',
-                borderColor: colorScheme ? undefined : (hidden ? undefined : `rgba(var(--border-color-rgb), var(--border-opacity))`)
+                borderColor: colorScheme ? undefined : (hidden || isSelected ? undefined : `rgba(var(--border-color-rgb), var(--border-opacity))`)
               }}
               >
               <div className="mr-4 text-gray-400 dark:text-slate-400 group-hover:text-gray-600 dark:group-hover:text-slate-200 transition-transform group-hover:scale-110 relative">

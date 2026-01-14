@@ -183,7 +183,9 @@ function App() {
     copyItem
   } = useFileSystem();
 
-  const [clipboard, setClipboard] = useState(null);
+  const [clipboard, setClipboard] = useState([]);
+  const [selectedPaths, setSelectedPaths] = useState(new Set());
+  const [lastSelectedPath, setLastSelectedPath] = useState(null);
 
   const { toggleHidden, isHidden, showHidden, toggleShowHidden } = useHiddenFiles();
 
@@ -254,6 +256,20 @@ function App() {
       
       return sortList([...visibleFiles]);
   }, [visibleFiles, sortConfig]);
+
+  const flatFiles = useMemo(() => {
+      const flatten = (list) => {
+          let res = [];
+          list.forEach(item => {
+              res.push(item);
+              if (item.children) {
+                  res = res.concat(flatten(item.children));
+              }
+          });
+          return res;
+      };
+      return flatten(sortedFiles);
+  }, [sortedFiles]);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
@@ -501,47 +517,116 @@ function App() {
       }
   };
 
-  // Context Menu Handlers
+  const handleFileClick = (e, file) => {
+      e.stopPropagation();
+      
+      if (e.ctrlKey || e.metaKey) {
+          const newSelection = new Set(selectedPaths);
+          if (newSelection.has(file.path)) {
+              newSelection.delete(file.path);
+          } else {
+              newSelection.add(file.path);
+              setLastSelectedPath(file.path);
+          }
+          setSelectedPaths(newSelection);
+          return;
+      }
+
+      if (e.shiftKey && lastSelectedPath) {
+          const lastIdx = flatFiles.findIndex(f => f.path === lastSelectedPath);
+          const currentIdx = flatFiles.findIndex(f => f.path === file.path);
+          
+          if (lastIdx !== -1 && currentIdx !== -1) {
+              const start = Math.min(lastIdx, currentIdx);
+              const end = Math.max(lastIdx, currentIdx);
+              const range = flatFiles.slice(start, end + 1).map(f => f.path);
+              setSelectedPaths(new Set(range));
+              return;
+          }
+      }
+
+      setSelectedPaths(new Set([file.path]));
+      setLastSelectedPath(file.path);
+  };
+
+  const handleFileDoubleClick = (e, file) => {
+      e.stopPropagation();
+      handleNavigate(file);
+  };
+
+  const handleBackgroundClick = () => {
+      setSelectedPaths(new Set());
+      setLastSelectedPath(null);
+      setContextMenu({ x: null, y: null, file: null });
+  };
+
   const handleContextMenu = (e, file = null) => {
       e.preventDefault();
-      setContextMenu({
-          x: e.clientX,
-          y: e.clientY,
-          file: file
-      });
+
+      let nextSelectedPaths = selectedPaths;
+
+      if (file && !selectedPaths.has(file.path)) {
+          nextSelectedPaths = new Set([file.path]);
+          setSelectedPaths(nextSelectedPaths);
+          setLastSelectedPath(file.path);
+      }
+
+      const selectedCount = file
+        ? (nextSelectedPaths.has(file.path) ? nextSelectedPaths.size : 1)
+        : 0;
+
+      setContextMenu({ x: e.clientX, y: e.clientY, file, selectedCount });
   };
 
   const handleMenuAction = async (action, file, extraData) => {
       try {
+          let targets = [];
+          if (file && selectedPaths.has(file.path)) {
+              targets = flatFiles.filter(f => selectedPaths.has(f.path));
+          } else if (file) {
+              targets = [file];
+          }
+
           if (action === 'set-color') {
               setFolderColors(prev => {
                   const rootKey = getRootKey();
-                  const folderKey = getTopLevelFolderKey(file.path, rootKey);
-                  if (!folderKey) return prev;
                   const next = { ...prev };
-                  if (!extraData) {
-                      delete next[folderKey];
-                  } else {
-                      next[folderKey] = extraData;
-                  }
+                  
+                  targets.forEach(target => {
+                      const folderKey = getTopLevelFolderKey(target.path, rootKey);
+                      if (!folderKey) return;
+                      if (!extraData) {
+                          delete next[folderKey];
+                      } else {
+                          next[folderKey] = extraData;
+                      }
+                  });
+                  
                   localStorage.setItem('folderColors', JSON.stringify(next));
                   return next;
               });
               showToast('颜色设置成功');
           } else if (action === 'open') {
-              handleNavigate(file);
+              if (targets.length === 1) handleNavigate(targets[0]);
           } else if (action === 'rename') {
-              setRenamingName(file.name);
+              if (targets.length === 1) {
+                  setRenamingName(targets[0].name);
+              } else {
+                  showToast('不能同时重命名多个文件', 'error');
+              }
           } else if (action === 'delete') {
               setConfirmDialog({
                   isOpen: true,
                   title: '删除文件',
-                  message: `确定要删除 "${file.name}" 吗? 此操作无法撤销。`,
+                  message: `确定要删除 ${targets.length} 个项目吗? 此操作无法撤销。`,
                   onConfirm: async () => {
                       try {
-                          await deleteItem(file.path);
+                          for (const target of targets) {
+                              await deleteItem(target.path);
+                          }
                           fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
                           showToast('删除成功');
+                          setSelectedPaths(new Set());
                       } catch (err) {
                           showToast('删除失败: ' + err.message, 'error');
                       }
@@ -549,7 +634,7 @@ function App() {
                   }
               });
           } else if (action === 'hide') {
-              toggleHidden(file.path);
+              targets.forEach(target => toggleHidden(target.path));
               showToast('已更新显示状态');
           } else if (action === 'new-folder') {
               const baseName = '新建文件夹';
@@ -557,12 +642,9 @@ function App() {
               
               let targetPath = path;
               if (file) {
-                  // If right-clicked a directory (e.g. Kanban column), create inside it
-                  // If right-clicked a file, create in its parent
                   if (file.isDirectory) {
                       targetPath = file.path;
                   } else {
-                      // Get parent path
                       const p = file.path;
                       const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
                       if (idx !== -1) {
@@ -619,39 +701,48 @@ function App() {
               await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
               setRenamingName(name);
           } else if (action === 'properties') {
-              alert(`名称: ${file.name}\n路径: ${file.path}\n类型: ${file.isDirectory ? '文件夹' : '文件'}`);
+              if (targets.length === 1) {
+                  alert(`名称: ${targets[0].name}\n路径: ${targets[0].path}\n类型: ${targets[0].isDirectory ? '文件夹' : '文件'}`);
+              } else {
+                   alert(`已选择 ${targets.length} 个项目`);
+              }
           } else if (action === 'copy') {
-              setClipboard({ path: file.path, name: file.name, isDirectory: file.isDirectory });
-              showToast('已复制');
+              const itemsToCopy = targets.map(t => ({ path: t.path, name: t.name, isDirectory: t.isDirectory }));
+              setClipboard(itemsToCopy);
+              showToast(`已复制 ${itemsToCopy.length} 个项目`);
           } else if (action === 'paste') {
-              if (!clipboard) return;
+              if (!clipboard || clipboard.length === 0) return;
               
               const separator = path.includes('/') ? '/' : '\\';
-              const getParentDir = (p) => {
-                  const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
-                  if (idx === -1) return '';
-                  return p.substring(0, idx);
-              };
-              const isSameFolder = normalizePathKey(getParentDir(clipboard.path)) === normalizePathKey(path);
- 
-              let baseName = clipboard.name;
-              let ext = '';
-              if (!clipboard.isDirectory) {
-                  const lastDotIndex = baseName.lastIndexOf('.');
-                  if (lastDotIndex > 0) {
-                      ext = baseName.substring(lastDotIndex);
-                      baseName = baseName.substring(0, lastDotIndex);
+              
+              for (const item of clipboard) {
+                  const getParentDir = (p) => {
+                      const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
+                      if (idx === -1) return '';
+                      return p.substring(0, idx);
+                  };
+                  const isSameFolder = normalizePathKey(getParentDir(item.path)) === normalizePathKey(path);
+     
+                  let baseName = item.name;
+                  let ext = '';
+                  if (!item.isDirectory) {
+                      const lastDotIndex = baseName.lastIndexOf('.');
+                      if (lastDotIndex > 0) {
+                          ext = baseName.substring(lastDotIndex);
+                          baseName = baseName.substring(0, lastDotIndex);
+                      }
                   }
-              }
- 
-              if (isSameFolder) {
-                  baseName = `${baseName} - 副本`;
+     
+                  if (isSameFolder) {
+                      baseName = `${baseName} - 副本`;
+                  }
+                  
+                  const newName = getUniqueName(baseName, ext);
+                  const destinationPath = `${path}${separator}${newName}`;
+                  
+                  await copyItem(item.path, destinationPath);
               }
               
-              const newName = getUniqueName(baseName, ext);
-              const destinationPath = `${path}${separator}${newName}`;
-              
-              await copyItem(clipboard.path, destinationPath);
               await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
               showToast('粘贴成功');
           }
@@ -669,7 +760,7 @@ function App() {
     <div 
         className="flex flex-col h-screen bg-transparent text-gray-800 font-sans selection:bg-primary-100 selection:text-primary-700"
         onContextMenu={(e) => handleContextMenu(e, null)}
-        onClick={() => setContextMenu({ x: null, y: null, file: null })} // Close menu on click
+        onClick={handleBackgroundClick}
     >
       <TopBar 
         currentPath={currentPath} 
@@ -707,33 +798,39 @@ function App() {
             {currentViewMode === 'dashboard' ? (
                 <DashboardView 
                     files={sortedFiles} 
-                    onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
                     folderColors={folderColors}
                     renamingName={renamingName}
                     onRenameSubmit={handleRenameSubmit}
+                    selectedPaths={selectedPaths}
+                    onFileClick={handleFileClick}
+                    onFileDoubleClick={handleFileDoubleClick}
                 />
             ) : currentViewMode === 'grid' ? (
                 <FileGrid 
                     files={sortedFiles} 
-                    onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
                     renamingName={renamingName}
                     onRenameSubmit={handleRenameSubmit}
                     folderColors={folderColors}
+                    selectedPaths={selectedPaths}
+                    onFileClick={handleFileClick}
+                    onFileDoubleClick={handleFileDoubleClick}
                 />
             ) : (
                 <FileList 
                     files={sortedFiles} 
-                    onNavigate={handleNavigate} 
                     onContextMenu={handleContextMenu}
                     depth={depth}
                     isHidden={isHidden}
                     renamingName={renamingName}
                     onRenameSubmit={handleRenameSubmit}
                     folderColors={folderColors}
+                    selectedPaths={selectedPaths}
+                    onFileClick={handleFileClick}
+                    onFileDoubleClick={handleFileDoubleClick}
                 />
             )}
             
@@ -758,9 +855,10 @@ function App() {
         file={contextMenu.file} 
         fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
-        onClose={() => setContextMenu({ x: null, y: null, file: null })}
+        onClose={() => setContextMenu({ x: null, y: null, file: null, selectedCount: 0 })}
         isLevel1={isRoot && !!contextMenu.file?.isDirectory && isTopLevelFolderPath(contextMenu.file.path)}
-        hasClipboard={!!clipboard}
+        hasClipboard={clipboard.length > 0}
+        selectedCount={contextMenu.selectedCount || 0}
       />
 
       <ConfirmDialog

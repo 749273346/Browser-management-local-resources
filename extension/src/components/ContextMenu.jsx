@@ -2,8 +2,9 @@ import { useEffect, useRef } from 'react';
 import { FolderPlus, FilePlus, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText, Copy, Clipboard } from 'lucide-react';
 import { COLUMN_COLORS } from '../constants/theme';
 
-export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard }) {
+export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard, selectedCount = 1 }) {
   const menuRef = useRef(null);
+  const isMulti = selectedCount > 1;
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -82,9 +83,9 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
         // File/Folder Context Menu
         <>
           <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider truncate">
-             {file.name}
+             {isMulti ? `已选择 ${selectedCount} 项` : file.name}
           </div>
-          {file.isDirectory && (
+          {!isMulti && file.isDirectory && (
              <MenuItem icon={FolderOpen} label="打开 (Open)" onClick={() => onAction('open', file)} />
           )}
           {isLevel1 && file.isDirectory && (
@@ -118,16 +119,16 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
                  <div className="h-px bg-gray-200 dark:bg-slate-700 my-2 mx-[-12px]"></div>
              </div>
           )}
-          <MenuItem icon={Copy} label="复制 (Copy)" onClick={() => onAction('copy', file)} />
+          <MenuItem icon={Copy} label={`复制 ${isMulti ? selectedCount + ' 项' : ''} (Copy)`} onClick={() => onAction('copy', file)} />
           <MenuItem 
             icon={fileHidden ? Eye : EyeOff} 
             label={fileHidden ? "取消停运 (Restore)" : "停运/隐藏 (Ignore)"} 
             onClick={() => onAction('hide', file)} 
           />
-          <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />
+          {!isMulti && <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />}
           <MenuItem icon={Info} label="属性 (Properties)" onClick={() => onAction('properties', file)} />
           <Separator />
-          <MenuItem icon={Trash2} label="删除 (Delete)" onClick={() => onAction('delete', file)} danger />
+          <MenuItem icon={Trash2} label={`删除 ${isMulti ? selectedCount + ' 项' : ''} (Delete)`} onClick={() => onAction('delete', file)} danger />
         </>
       ) : (
         // Empty Space Context Menu

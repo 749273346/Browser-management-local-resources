@@ -17,7 +17,7 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function DashboardView({ files, onNavigate, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit }) {
+export default function DashboardView({ files, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick }) {
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
 
@@ -62,14 +62,19 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                         {looseFiles.map((file, i) => {
                             const hidden = isHidden ? isHidden(file.path) : false;
                             const isRenaming = renamingName === file.name;
+                            const isSelected = selectedPaths && selectedPaths.has(file.path);
+                            
                             return (
                                 <div
                                     key={i}
-                                    onClick={() => !isRenaming && onNavigate(file)}
+                                    onClick={(e) => !isRenaming && onFileClick && onFileClick(e, file)}
+                                    onDoubleClick={(e) => !isRenaming && onFileDoubleClick && onFileDoubleClick(e, file)}
                                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, file); }}
                                     className={`
                                         group flex items-center p-2 rounded-lg cursor-pointer transition-all
-                                        ${hidden ? 'opacity-50 grayscale border-dashed border border-gray-300' : 'bg-white/60 dark:bg-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md'}
+                                        ${hidden ? 'opacity-50 grayscale border-dashed border border-gray-300' : ''}
+                                        ${!isSelected && !hidden ? 'bg-white/60 dark:bg-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md' : ''}
+                                        ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700 ring-1 ring-primary-300 dark:ring-primary-700' : ''}
                                         ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
                                     `}
                                 >
@@ -97,6 +102,7 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                         const hidden = isHidden ? isHidden(folder.path) : false;
                         const children = folder.children || [];
                         const isFolderRenaming = renamingName === folder.name;
+                        const isFolderSelected = selectedPaths && selectedPaths.has(folder.path);
 
                         return (
                             <div 
@@ -115,12 +121,13 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                             >
                                 {/* Column Header */}
                                 <div 
-                                    className={`p-4 border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group`}
+                                    className={`p-4 border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group ${isFolderSelected ? 'ring-2 ring-primary-500 z-10' : ''}`}
                                     style={{ 
                                         borderTopLeftRadius: 'var(--radius-card)', 
                                         borderTopRightRadius: 'var(--radius-card)' 
                                     }}
-                                    onClick={() => !isFolderRenaming && onNavigate(folder)}
+                                    onClick={(e) => !isFolderRenaming && onFileClick && onFileClick(e, folder)}
+                                    onDoubleClick={(e) => !isFolderRenaming && onFileDoubleClick && onFileDoubleClick(e, folder)}
                                     onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, folder); }}
                                 >
                                     {isFolderRenaming ? (
@@ -149,12 +156,18 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                         children.map((child, childIndex) => {
                                             const childHidden = isHidden ? isHidden(child.path) : false;
                                             const isChildRenaming = renamingName === child.name;
+                                            const isSelected = selectedPaths && selectedPaths.has(child.path);
+
                                             return (
                                                 <div
                                                     key={childIndex}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        if (!isChildRenaming) onNavigate(child);
+                                                        if (!isChildRenaming && onFileClick) onFileClick(e, child);
+                                                    }}
+                                                    onDoubleClick={(e) => {
+                                                        e.stopPropagation();
+                                                        if (!isChildRenaming && onFileDoubleClick) onFileDoubleClick(e, child);
                                                     }}
                                                     onContextMenu={(e) => {
                                                         e.preventDefault();
@@ -163,7 +176,9 @@ export default function DashboardView({ files, onNavigate, onContextMenu, isHidd
                                                     }}
                                                     className={`
                                                         flex items-center p-3 rounded-xl cursor-pointer transition-all border
-                                                        ${childHidden ? 'opacity-50 grayscale border-dashed border-gray-400' : 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:-translate-y-0.5'}
+                                                        ${childHidden ? 'opacity-50 grayscale border-dashed border-gray-400' : ''}
+                                                        ${!isSelected && !childHidden ? 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:-translate-y-0.5' : ''}
+                                                        ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700' : ''}
                                                         ${isChildRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
                                                     `}
                                                 >
