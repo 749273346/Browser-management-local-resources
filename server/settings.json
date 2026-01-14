@@ -19,7 +19,7 @@
     "c:/users/74927/desktop/测试资源库/安全管理/2-作业派工单/2023年归档": "grid",
     "c:/users/74927/desktop/测试资源库/安全管理": "grid",
     "c:/users/74927/desktop/测试资源库/安全管理/1-停电作业工作票/2024年归档": "grid",
-    "c:/users/74927/desktop/测试资源库/生产管理": "list",
+    "c:/users/74927/desktop/测试资源库/生产管理": "dashboard",
     "c:/users/74927/desktop/测试资源库/生产管理/3-设备巡视库": "dashboard",
     "c:/users/74927/desktop/测试资源库/安全管理/2-作业派工单": "dashboard",
     "c:/users/74927/desktop/测试资源库/生产管理/1-年度检修计划库/2024年归档": "dashboard",
@@ -29,8 +29,8 @@
     "c:/users/74927/desktop/测试资源库/多媒体": "grid",
     "c:/users/74927/desktop/测试资源库/测试文件": "grid"
   },
-  "appTheme": "high-speed",
-  "colorMode": "night",
+  "appTheme": "glass-morphism",
+  "colorMode": "day",
   "bgImage": "/wallpapers/gz_hsr_crh1a.jpg?v=3",
   "glassOpacity": "0.5",
   "glassBlur": "14"

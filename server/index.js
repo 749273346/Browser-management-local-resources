@@ -14,6 +14,51 @@ app.use(express.json());
 
 const isElectronRuntime = () => Boolean(process.versions && process.versions.electron);
 
+const escapePowerShellSingleQuotedString = (value) => String(value).replace(/'/g, "''");
+
+const toPowerShellEncodedCommand = (script) => {
+    const base64 = Buffer.from(String(script), 'utf16le').toString('base64');
+    return `powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -EncodedCommand ${base64}`;
+};
+
+const buildWindowsOpenMaximizedScript = (targetPath) => {
+    const escapedPath = escapePowerShellSingleQuotedString(targetPath);
+    return `
+$ErrorActionPreference = 'SilentlyContinue'
+$path = '${escapedPath}'
+$ws = New-Object -ComObject WScript.Shell
+function ActivateAndMaximize([string]$title) {
+  for ($i = 0; $i -lt 25; $i++) {
+    if ($ws.AppActivate($title)) {
+      Start-Sleep -Milliseconds 80
+      $ws.SendKeys('%{SPACE}')
+      Start-Sleep -Milliseconds 80
+      $ws.SendKeys('x')
+      return $true
+    }
+    Start-Sleep -Milliseconds 120
+  }
+  return $false
+}
+if (Test-Path -LiteralPath $path) {
+  if ((Get-Item -LiteralPath $path).PSIsContainer) {
+    Start-Process -FilePath 'explorer.exe' -ArgumentList @($path) | Out-Null
+    Start-Sleep -Milliseconds 150
+    $folder = Split-Path -Leaf $path
+    [void](ActivateAndMaximize($folder))
+  } else {
+    Start-Process -FilePath $path -WindowStyle Maximized | Out-Null
+    Start-Sleep -Milliseconds 150
+    $name = [System.IO.Path]::GetFileName($path)
+    if (-not (ActivateAndMaximize($name))) {
+      $base = [System.IO.Path]::GetFileNameWithoutExtension($path)
+      [void](ActivateAndMaximize($base))
+    }
+  }
+}
+    `.trim();
+};
+
 try {
     logger.info('Boot', {
         node: process.version,
@@ -232,14 +277,18 @@ app.post('/api/open', async (req, res) => {
             }
         }
 
-        // Use PowerShell to ensure window is maximized
-        // For files, we use Start-Process directly on the file to apply WindowStyle to the app
-        // For directories, we use explorer.exe
+        // Use PowerShell script with P/Invoke for robust window activation
+        const scriptPath = path.join(__dirname, 'scripts', 'open-file.ps1');
         let psCommand;
+        
         if (stats.isDirectory()) {
-            psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'explorer.exe' -ArgumentList \\"${cleanPath}\\" -WindowStyle Maximized"`;
+             // For directories, explorer.exe handles it well enough usually
+             psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'explorer.exe' -ArgumentList \\"${cleanPath}\\" -WindowStyle Maximized"`;
         } else {
-            psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath \\"${cleanPath}\\" -WindowStyle Maximized"`;
+             // For files, use our custom script
+             // Escape single quotes for PowerShell argument
+             const escapedPath = cleanPath.replace(/'/g, "''");
+             psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}" -FilePath '${escapedPath}'`;
         }
         
         return exec(psCommand, { encoding: 'utf8' }, (error) => {
