@@ -53,6 +53,18 @@ const sanitizeFolderColors = (raw, rootKey = getRootKey()) => {
   return next
 }
 
+const sanitizeFolderViewModes = (raw) => {
+  const allowed = new Set(['dashboard', 'grid', 'list'])
+  const next = {}
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (!allowed.has(v)) continue
+    const nk = normalizePathKey(k)
+    if (!nk) continue
+    next[nk] = v
+  }
+  return next
+}
+
 function App() {
   const SERVER_URL = 'http://localhost:3001';
 
@@ -61,7 +73,7 @@ function App() {
           const settings = {
               rootPath: localStorage.getItem('rootPath'),
               folderColors: JSON.parse(localStorage.getItem('folderColors') || '{}'),
-              folderViewModes: JSON.parse(localStorage.getItem('folderViewModes') || '{}'),
+              folderViewModes: sanitizeFolderViewModes(JSON.parse(localStorage.getItem('folderViewModes') || '{}')),
               appTheme: localStorage.getItem('appTheme'),
               colorMode: localStorage.getItem('colorMode'),
               bgImage: localStorage.getItem('bgImage'),
@@ -121,7 +133,7 @@ function App() {
                       updateServerSettings({ colorMode: localColorMode }).catch(() => {});
                   }
                   
-                  const keys = ['folderColors', 'folderViewModes', 'bgImage', 'glassOpacity', 'glassBlur'];
+                  const keys = ['folderColors', 'bgImage', 'glassOpacity', 'glassBlur'];
                   keys.forEach(key => {
                       if (settings[key]) {
                           const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key]) : settings[key];
@@ -132,9 +144,16 @@ function App() {
                       }
                   });
 
+                  const serverFolderViewModes = sanitizeFolderViewModes(settings.folderViewModes || {});
+                  const serverFolderViewModesJson = JSON.stringify(serverFolderViewModes);
+                  if (serverFolderViewModesJson !== localStorage.getItem('folderViewModes')) {
+                      localStorage.setItem('folderViewModes', serverFolderViewModesJson);
+                      changed = true;
+                  }
+
                   if (changed) {
                       setFolderColors(sanitizeFolderColors(settings.folderColors));
-                      setFolderViewModes(settings.folderViewModes || {});
+                      setFolderViewModes(serverFolderViewModes);
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
@@ -213,7 +232,7 @@ function App() {
   // View Mode State (Per folder)
   const [folderViewModes, setFolderViewModes] = useState(() => {
       try {
-          return JSON.parse(localStorage.getItem('folderViewModes') || '{}');
+          return sanitizeFolderViewModes(JSON.parse(localStorage.getItem('folderViewModes') || '{}'));
       } catch {
           return {};
       }
@@ -231,16 +250,17 @@ function App() {
 
   // Get view mode for current path (default to 'dashboard')
   // We should use 'path' state which is the source of truth for navigation in App.jsx
-  const currentViewMode = folderViewModes[path] || 'dashboard';
+  const currentViewMode = folderViewModes[normalizePathKey(path)] || 'dashboard';
 
   const handleToggleView = (newMode) => {
       setFolderViewModes(prev => {
           // Use 'path' state instead of 'currentPath' to ensure we update the view mode for the currently displayed folder
           // 'currentPath' from useFileSystem might lag slightly or be the parent of what we want to configure
           // But actually, 'path' state in App.jsx is what drives the navigation.
-          const targetPath = path; 
-          const next = { ...prev, [targetPath]: newMode };
+          const targetPathKey = normalizePathKey(path); 
+          const next = { ...prev, [targetPathKey]: newMode };
           localStorage.setItem('folderViewModes', JSON.stringify(next));
+          updateServerSettings({ folderViewModes: next }).catch(() => {});
           return next;
       });
   };
@@ -300,12 +320,31 @@ function App() {
       }
   }, []);
 
+  useEffect(() => {
+      try {
+          const raw = JSON.parse(localStorage.getItem('folderViewModes') || '{}')
+          const next = sanitizeFolderViewModes(raw)
+          const rawJson = JSON.stringify(raw || {})
+          const nextJson = JSON.stringify(next)
+          if (rawJson !== nextJson) {
+              localStorage.setItem('folderViewModes', nextJson)
+              updateServerSettings({ folderViewModes: next }).catch(() => {})
+          }
+          setFolderViewModes(prev => {
+              const prevJson = JSON.stringify(prev || {})
+              return prevJson === nextJson ? prev : next
+          })
+      } catch {
+          setFolderViewModes(prev => prev)
+      }
+  }, []);
+
   // Initial Load
   useEffect(() => {
     if (path) {
       // Determine view mode for the target path to fetch correct depth
       // We need to look up the mode for 'path', not 'currentPath' (which might be stale)
-      const mode = folderViewModes[path] || 'dashboard';
+      const mode = folderViewModes[normalizePathKey(path)] || 'dashboard';
       fetchFiles(path, mode === 'dashboard' ? 2 : 1);
     }
   }, [path, fetchFiles, folderViewModes]); // Added folderViewModes dependency to refetch if mode changes
