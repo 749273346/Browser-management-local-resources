@@ -204,8 +204,9 @@ app.post('/api/open', async (req, res) => {
 
     logger.info(`Opening: ${targetPath}`);
 
+    let stats;
     try {
-        await fs.access(targetPath);
+        stats = await fs.stat(targetPath);
     } catch (err) {
         logger.error(`File not found: ${targetPath}`);
         return res.status(404).json({ error: 'File does not exist' });
@@ -232,8 +233,14 @@ app.post('/api/open', async (req, res) => {
         }
 
         // Use PowerShell to ensure window is maximized
-        // We use explorer.exe directly with -WindowStyle Maximized to guarantee the window state
-        const psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'explorer.exe' -ArgumentList \\"${cleanPath}\\" -WindowStyle Maximized"`;
+        // For files, we use Start-Process directly on the file to apply WindowStyle to the app
+        // For directories, we use explorer.exe
+        let psCommand;
+        if (stats.isDirectory()) {
+            psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath 'explorer.exe' -ArgumentList \\"${cleanPath}\\" -WindowStyle Maximized"`;
+        } else {
+            psCommand = `powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath \\"${cleanPath}\\" -WindowStyle Maximized"`;
+        }
         
         return exec(psCommand, { encoding: 'utf8' }, (error) => {
             if (error) {
