@@ -1,5 +1,5 @@
 {
-  "rootPath": "C:\\Users\\74927\\Desktop\\测试资源库",
+  "rootPath": "E:\\Working overseas",
   "folderColors": {
     "c:/users/74927/desktop/测试资源库/安全管理": "red",
     "c:/users/74927/desktop/测试资源库/表格数据": "orange",
@@ -68,7 +68,11 @@
     "c:/users/74927/windowspcmanager": "green",
     "c:/users/74927/wps cloud files": "cyan",
     "c:/users/74927/wpsdrive": "blue",
-    "c:/users/74927/xwechat_files": "purple"
+    "c:/users/74927/xwechat_files": "purple",
+    "e:/working overseas/fieverr": "red",
+    "e:/working overseas/planning proposal": "orange",
+    "e:/working overseas/relevant experience": "yellow",
+    "e:/working overseas/upwork": "green"
   },
   "folderViewModes": {
     "c:/users/74927/desktop/测试资源库": "grid",
@@ -86,8 +90,8 @@
     "c:/users/74927/desktop/测试资源库/测试文件": "grid",
     "e:/working overseas": "dashboard"
   },
-  "appTheme": "iron-spirit",
-  "colorMode": "day",
+  "appTheme": "high-speed",
+  "colorMode": "night",
   "bgImage": "/wallpapers/gz_hsr_crh1a.jpg?v=3",
   "glassOpacity": "0.45",
   "glassBlur": "12"
