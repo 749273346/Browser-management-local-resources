@@ -17,7 +17,7 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function DashboardView({ files, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick }) {
+export default function DashboardView({ files, onContextMenu, isHidden, showHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick }) {
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
 
@@ -50,7 +50,7 @@ export default function DashboardView({ files, onContextMenu, isHidden, folderCo
     return (
         <div className="flex flex-col h-full p-6 space-y-6">
             {/* Header / Loose Files Area */}
-            {looseFiles.length > 0 && (
+            {showHidden && looseFiles.length > 0 && (
                 <div 
                     className="glass-effect p-4"
                     style={{ borderRadius: 'var(--radius-card)' }}

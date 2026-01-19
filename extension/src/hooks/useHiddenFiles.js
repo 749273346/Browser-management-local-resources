@@ -36,6 +36,7 @@ export function useHiddenFiles() {
   return {
     hiddenFiles,
     showHidden,
+    setShowHidden,
     toggleHidden,
     isHidden,
     toggleShowHidden
