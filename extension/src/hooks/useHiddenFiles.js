@@ -10,44 +10,69 @@ export function useHiddenFiles() {
     }
   });
 
+  const [shownFiles, setShownFiles] = useState(() => {
+    try {
+      const saved = localStorage.getItem('shownFiles');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
   const [showHidden, setShowHidden] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('hiddenFiles', JSON.stringify(hiddenFiles));
   }, [hiddenFiles]);
 
+  useEffect(() => {
+    localStorage.setItem('shownFiles', JSON.stringify(shownFiles));
+  }, [shownFiles]);
+
   const toggleHidden = useCallback((filePath) => {
-    setHiddenFiles(prev => {
-      if (prev.includes(filePath)) {
-        return prev.filter(p => p !== filePath);
+    setHiddenFiles(prevHidden => {
+      if (prevHidden.includes(filePath)) {
+        setShownFiles(prevShown => (prevShown.includes(filePath) ? prevShown : [...prevShown, filePath]));
+        return prevHidden.filter(p => p !== filePath);
       }
-      return [...prev, filePath];
+
+      setShownFiles(prevShown => prevShown.filter(p => p !== filePath));
+      return [...prevHidden, filePath];
     });
   }, []);
 
+  const addHiddenFiles = useCallback((filePaths) => {
+    if (!Array.isArray(filePaths) || filePaths.length === 0) return;
+    setHiddenFiles(prevHidden => {
+      const nextHidden = new Set(prevHidden);
+      let changed = false;
+      filePaths.forEach(filePath => {
+        if (!shownFiles.includes(filePath) && !nextHidden.has(filePath)) {
+          nextHidden.add(filePath);
+          changed = true;
+        }
+      });
+      return changed ? Array.from(nextHidden) : prevHidden;
+    });
+  }, [shownFiles]);
+
   const isHidden = useCallback((filePath) => {
-    return hiddenFiles.includes(filePath);
-  }, [hiddenFiles]);
+    if (shownFiles.includes(filePath)) return false;
+    if (hiddenFiles.includes(filePath)) return true;
+    return false;
+  }, [hiddenFiles, shownFiles]);
 
   const toggleShowHidden = useCallback(() => {
       setShowHidden(prev => !prev);
   }, []);
 
-  const addHiddenFiles = useCallback((paths) => {
-    if (!Array.isArray(paths) || paths.length === 0) return;
-    setHiddenFiles(prev => {
-      const next = new Set(prev);
-      paths.forEach(p => next.add(p));
-      return Array.from(next);
-    });
-  }, []);
-
   const setShowHiddenState = useCallback((value) => {
-    setShowHidden(!!value);
+    setShowHidden(Boolean(value));
   }, []);
 
   return {
     hiddenFiles,
+    shownFiles,
     showHidden,
     toggleHidden,
     isHidden,
