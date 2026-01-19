@@ -103,6 +103,27 @@ export function useFileSystem() {
       }
   }, []);
 
+  const copyToClipboard = useCallback(async (paths) => {
+      const res = await fetch(`${API_BASE}/system-clipboard/copy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paths })
+      });
+      if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || 'Failed to copy to clipboard');
+      }
+  }, []);
+
+  const getClipboardFiles = useCallback(async () => {
+      const res = await fetch(`${API_BASE}/system-clipboard/paste`);
+      if (!res.ok) {
+          throw new Error('Failed to get clipboard content');
+      }
+      const data = await res.json();
+      return data.files || [];
+  }, []);
+
   return {
     files,
     currentPath,
@@ -115,6 +136,8 @@ export function useFileSystem() {
     createFile,
     renameItem,
     deleteItem,
-    copyItem
+    copyItem,
+    copyToClipboard,
+    getClipboardFiles
   };
 }

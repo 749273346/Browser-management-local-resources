@@ -521,6 +521,84 @@ app.post('/api/copy', async (req, res) => {
 });
 
 
+// System Clipboard API
+app.post('/api/system-clipboard/copy', async (req, res) => {
+    const { paths } = req.body;
+    if (!paths || !Array.isArray(paths) || paths.length === 0) {
+        return res.status(400).json({ error: 'Paths array is required' });
+    }
+
+    try {
+        // Construct PowerShell command to set clipboard
+        const escapedPaths = paths.map(p => `'${p.replace(/'/g, "''")}'`).join(',');
+        const psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Clipboard -Path ${escapedPaths}
+        `.trim();
+        const command = toPowerShellEncodedCommand(psScript);
+
+        exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
+            if (error) {
+                logger.error('Clipboard copy error:', error);
+                return res.status(500).json({ error: error.message });
+            }
+            res.json({ success: true });
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/system-clipboard/paste', async (req, res) => {
+    try {
+        // Get files from clipboard with metadata
+        // Format: FullPath|Name|IsDirectory
+        const psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$files = Get-Clipboard -Format FileDropList -ErrorAction SilentlyContinue
+if ($files) {
+  foreach ($f in $files) {
+    $full = if ($f -is [string]) { $f } elseif ($null -ne $f.FullName) { $f.FullName } else { [string]$f }
+    $info = Get-Item -LiteralPath $full -ErrorAction SilentlyContinue
+    $name = if ($info) { $info.Name } else { Split-Path -Leaf $full }
+    $isDir = if ($info) { [bool]$info.PSIsContainer } else { $false }
+    Write-Output "$full|$name|$isDir"
+  }
+}
+        `.trim();
+        const command = toPowerShellEncodedCommand(psScript);
+
+        exec(command, { encoding: 'utf8' }, (error, stdout, stderr) => {
+            if (error) {
+                // If Get-Clipboard fails (e.g. no files), just return empty
+                // But typically it just returns nothing if empty
+                logger.error('Clipboard paste error:', error);
+                return res.json({ files: [] });
+            }
+
+            const files = stdout.trim().split('\r\n')
+                .filter(line => line.trim())
+                .map(line => {
+                    const parts = line.split('|');
+                    if (parts.length >= 3) {
+                        return {
+                            path: parts[0],
+                            name: parts[1],
+                            isDirectory: parts[2].toLowerCase() === 'true'
+                        };
+                    }
+                    return null;
+                })
+                .filter(item => item !== null);
+
+            res.json({ files });
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // Settings API
 const settingsPath = path.join(__dirname, 'settings.json');
 

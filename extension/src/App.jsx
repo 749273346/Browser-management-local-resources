@@ -180,7 +180,9 @@ function App() {
     createFile,
     renameItem,
     deleteItem,
-    copyItem
+    copyItem,
+    copyToClipboard,
+    getClipboardFiles
   } = useFileSystem();
 
   const [clipboard, setClipboard] = useState([]);
@@ -709,19 +711,45 @@ function App() {
           } else if (action === 'copy') {
               const itemsToCopy = targets.map(t => ({ path: t.path, name: t.name, isDirectory: t.isDirectory }));
               setClipboard(itemsToCopy);
+              
+              // Sync to system clipboard
+              try {
+                  await copyToClipboard(itemsToCopy.map(t => t.path));
+              } catch (e) {
+                  console.error('Failed to sync to system clipboard', e);
+              }
+
               showToast(`已复制 ${itemsToCopy.length} 个项目`);
           } else if (action === 'paste') {
-              if (!clipboard || clipboard.length === 0) return;
+              let itemsToPaste = [];
+              try {
+                  const sysFiles = await getClipboardFiles();
+                  if (sysFiles && sysFiles.length > 0) {
+                      itemsToPaste = sysFiles;
+                  } else {
+                      itemsToPaste = clipboard;
+                  }
+              } catch (e) {
+                  console.error('Failed to get system clipboard', e);
+                  itemsToPaste = clipboard;
+              }
+
+              if (!itemsToPaste || itemsToPaste.length === 0) return;
               
               const separator = path.includes('/') ? '/' : '\\';
               
-              for (const item of clipboard) {
+              for (const item of itemsToPaste) {
                   const getParentDir = (p) => {
                       const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
                       if (idx === -1) return '';
                       return p.substring(0, idx);
                   };
-                  const isSameFolder = normalizePathKey(getParentDir(item.path)) === normalizePathKey(path);
+                  // Check if we are pasting into the same folder
+                  // Note: item.path from system clipboard might be anything.
+                  // We normalize comparison.
+                  const itemParent = normalizePathKey(getParentDir(item.path));
+                  const currentDir = normalizePathKey(path);
+                  const isSameFolder = itemParent === currentDir;
      
                   let baseName = item.name;
                   let ext = '';
