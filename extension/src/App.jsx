@@ -189,7 +189,7 @@ function App() {
   const [selectedPaths, setSelectedPaths] = useState(new Set());
   const [lastSelectedPath, setLastSelectedPath] = useState(null);
 
-  const { toggleHidden, isHidden, showHidden, toggleShowHidden, setShowHidden } = useHiddenFiles();
+  const { toggleHidden, isHidden, showHidden, toggleShowHidden } = useHiddenFiles();
 
   // Filter files based on hidden status
   // For dashboard view (recursive), we need to filter children too, 
@@ -412,11 +412,6 @@ function App() {
       fetchFiles(path, mode === 'dashboard' ? 2 : 1);
     }
   }, [path, fetchFiles, folderViewModes]); // Added folderViewModes dependency to refetch if mode changes
-
-  // Reset showHidden when entering a new folder
-  useEffect(() => {
-      setShowHidden(false);
-  }, [path, setShowHidden]);
 
   useEffect(() => {
       if (!isRoot || currentViewMode !== 'dashboard') return;
@@ -833,7 +828,6 @@ function App() {
                     files={sortedFiles} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
-                    showHidden={showHidden}
                     folderColors={folderColors}
                     renamingName={renamingName}
                     onRenameSubmit={handleRenameSubmit}
