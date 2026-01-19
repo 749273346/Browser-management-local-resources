@@ -33,11 +33,26 @@ export function useHiddenFiles() {
       setShowHidden(prev => !prev);
   }, []);
 
+  const addHiddenFiles = useCallback((paths) => {
+    if (!Array.isArray(paths) || paths.length === 0) return;
+    setHiddenFiles(prev => {
+      const next = new Set(prev);
+      paths.forEach(p => next.add(p));
+      return Array.from(next);
+    });
+  }, []);
+
+  const setShowHiddenState = useCallback((value) => {
+    setShowHidden(!!value);
+  }, []);
+
   return {
     hiddenFiles,
     showHidden,
     toggleHidden,
     isHidden,
-    toggleShowHidden
+    toggleShowHidden,
+    addHiddenFiles,
+    setShowHiddenState
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useFileSystem } from './hooks/useFileSystem'
 import { useHiddenFiles } from './hooks/useHiddenFiles'
 import WelcomeScreen from './components/WelcomeScreen'
@@ -189,7 +189,8 @@ function App() {
   const [selectedPaths, setSelectedPaths] = useState(new Set());
   const [lastSelectedPath, setLastSelectedPath] = useState(null);
 
-  const { toggleHidden, isHidden, showHidden, toggleShowHidden } = useHiddenFiles();
+  const { toggleHidden, isHidden, showHidden, toggleShowHidden, addHiddenFiles, setShowHiddenState } = useHiddenFiles();
+  const autoHiddenPathsRef = useRef(new Set());
 
   // Filter files based on hidden status
   // For dashboard view (recursive), we need to filter children too, 
@@ -292,6 +293,16 @@ function App() {
   };
 
   const [path, setPath] = useState(getInitialPath());
+
+  useEffect(() => {
+    if (!path) return;
+    const key = normalizePathKey(path);
+    if (autoHiddenPathsRef.current.has(key)) return;
+    if (!Array.isArray(files) || files.length === 0) return;
+    addHiddenFiles(files.map(file => file.path));
+    setShowHiddenState(false);
+    autoHiddenPathsRef.current.add(key);
+  }, [path, files, addHiddenFiles, setShowHiddenState]);
 
   // View Mode State (Per folder)
   const [folderViewModes, setFolderViewModes] = useState(() => {
