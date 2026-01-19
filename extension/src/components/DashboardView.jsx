@@ -17,9 +17,24 @@ const getFileIcon = (name, isDirectory) => {
     }
 };
 
-export default function DashboardView({ files, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick }) {
+export default function DashboardView({ files, currentPath, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick }) {
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
+
+    let allColumns = [...folders];
+    
+    // Create virtual folder for loose files if they exist
+    if (looseFiles.length > 0) {
+        const virtualFolder = {
+            name: '文件',
+            path: (currentPath || '') + '::__files__',
+            isDirectory: true,
+            isVirtual: true,
+            children: looseFiles
+        };
+        // Insert at the beginning
+        allColumns = [virtualFolder, ...folders];
+    }
 
     const RenameInput = ({ file, className }) => (
         <input
@@ -48,65 +63,29 @@ export default function DashboardView({ files, onContextMenu, isHidden, folderCo
     );
 
     return (
-        <div className="flex flex-col h-full p-6 space-y-6">
-            {/* Header / Loose Files Area */}
-            {looseFiles.length > 0 && (
-                <div 
-                    className="glass-effect p-4"
-                    style={{ borderRadius: 'var(--radius-card)' }}
-                >
-                    <h3 className="text-sm font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-3 px-2">
-                        文件 ({looseFiles.length})
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {looseFiles.map((file, i) => {
-                            const hidden = isHidden ? isHidden(file.path) : false;
-                            const isRenaming = renamingName === file.name;
-                            const isSelected = selectedPaths && selectedPaths.has(file.path);
-                            
-                            return (
-                                <div
-                                    key={i}
-                                    onClick={(e) => !isRenaming && onFileClick && onFileClick(e, file)}
-                                    onDoubleClick={(e) => !isRenaming && onFileDoubleClick && onFileDoubleClick(e, file)}
-                                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, file); }}
-                                    className={`
-                                        group flex items-center p-2 rounded-lg cursor-pointer transition-all
-                                        ${hidden ? 'opacity-50 grayscale border-dashed border border-gray-300' : ''}
-                                        ${!isSelected && !hidden ? 'bg-white/60 dark:bg-slate-700/60 hover:bg-white dark:hover:bg-slate-700 hover:shadow-md' : ''}
-                                        ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700 ring-1 ring-primary-300 dark:ring-primary-700' : ''}
-                                        ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
-                                    `}
-                                >
-                                    <div className="mr-3">{getFileIcon(file.name, false)}</div>
-                                    {isRenaming ? (
-                                        <RenameInput file={file} className="flex-1 w-full min-w-0" />
-                                    ) : (
-                                        <span className="text-sm text-gray-700 dark:text-slate-200 font-medium truncate flex-1">{file.name}</span>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-
+        <div className="flex flex-col h-full p-6">
             {/* Columns Container */}
-            <div className="flex-1 overflow-x-auto pb-4">
+            <div className="flex-1 overflow-x-auto custom-scrollbar pb-4">
                 <div className="flex space-x-6 min-w-max h-full">
-                    {folders.map((folder, index) => {
+                    {allColumns.map((folder, index) => {
                         let color = COLUMN_COLORS[index % COLUMN_COLORS.length];
                         const effective = getEffectiveColorScheme(folder.path, folderColors);
                         if (effective) color = effective;
                         
+                        // For virtual folder, we check if it is hidden (conceptually)
+                        // But since it's a virtual container, maybe we just check if its ID is in hidden list?
+                        // But toggleHidden works on real paths.
+                        // If we allowed 'hide' on virtual folder, it toggles 'path::__files__'.
+                        // So isHidden(folder.path) should work if we toggled it.
                         const hidden = isHidden ? isHidden(folder.path) : false;
+                        
                         const children = folder.children || [];
                         const isFolderRenaming = renamingName === folder.name;
                         const isFolderSelected = selectedPaths && selectedPaths.has(folder.path);
 
                         return (
                             <div 
-                                key={index}
+                                key={folder.path || index}
                                 className={`
                                     w-80 flex flex-col transition-all h-full max-h-full border shadow-sm backdrop-blur-md
                                     ${color.bg} ${color.border}
@@ -138,7 +117,7 @@ export default function DashboardView({ files, onContextMenu, isHidden, folderCo
                                             {hidden && <EyeOff size={16} className="ml-2 opacity-50"/>}
                                         </h3>
                                     )}
-                                    {!isFolderRenaming && (
+                                    {!isFolderRenaming && !folder.isVirtual && (
                                         <ChevronRight size={20} className={`${color.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
                                     )}
                                 </div>
@@ -205,7 +184,7 @@ export default function DashboardView({ files, onContextMenu, isHidden, folderCo
                                     )}
                                 </div>
                                 
-                                {/* Column Footer (Action?) */}
+                                {/* Column Footer */}
                                 <div 
                                     className={`p-2 border-t ${color.border} bg-white/10 text-center`}
                                     style={{ 
@@ -221,7 +200,7 @@ export default function DashboardView({ files, onContextMenu, isHidden, folderCo
                         );
                     })}
 
-                    {folders.length === 0 && looseFiles.length === 0 && (
+                    {allColumns.length === 0 && (
                         <div className="flex flex-col items-center justify-center w-full h-64 text-gray-500">
                             <span className="text-lg">暂无内容</span>
                         </div>

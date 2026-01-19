@@ -852,6 +852,7 @@ function App() {
             {currentViewMode === 'dashboard' ? (
                 <DashboardView 
                     files={sortedFiles} 
+                    currentPath={path}
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
                     folderColors={folderColors}

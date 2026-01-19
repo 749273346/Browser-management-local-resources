@@ -85,10 +85,10 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
           <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider truncate">
              {isMulti ? `已选择 ${selectedCount} 项` : file.name}
           </div>
-          {!isMulti && file.isDirectory && (
+          {!isMulti && file.isDirectory && !file.isVirtual && (
              <MenuItem icon={FolderOpen} label="打开 (Open)" onClick={() => onAction('open', file)} />
           )}
-          {isLevel1 && file.isDirectory && (
+          {(isLevel1 || file.isVirtual) && file.isDirectory && (
              <div className="px-3 py-2">
                  <div className="text-xs font-semibold text-gray-400 dark:text-slate-400 mb-2 uppercase tracking-wider">设置颜色 (Color)</div>
                  <div className="flex space-x-2">
@@ -119,16 +119,16 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
                  <div className="h-px bg-gray-200 dark:bg-slate-700 my-2 mx-[-12px]"></div>
              </div>
           )}
-          <MenuItem icon={Copy} label={`复制 ${isMulti ? selectedCount + ' 项' : ''} (Copy)`} onClick={() => onAction('copy', file)} />
+          <MenuItem icon={Copy} label={`复制 ${isMulti ? selectedCount + ' 项' : ''} (Copy)`} onClick={() => onAction('copy', file)} disabled={file.isVirtual} />
           <MenuItem 
             icon={fileHidden ? Eye : EyeOff} 
             label={fileHidden ? "取消停运 (Restore)" : "停运/隐藏 (Ignore)"} 
             onClick={() => onAction('hide', file)} 
           />
-          {!isMulti && <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} />}
-          <MenuItem icon={Info} label="属性 (Properties)" onClick={() => onAction('properties', file)} />
+          {!isMulti && <MenuItem icon={Pencil} label="重命名 (Rename)" onClick={() => onAction('rename', file)} disabled={file.isVirtual} />}
+          <MenuItem icon={Info} label="属性 (Properties)" onClick={() => onAction('properties', file)} disabled={file.isVirtual} />
           <Separator />
-          <MenuItem icon={Trash2} label={`删除 ${isMulti ? selectedCount + ' 项' : ''} (Delete)`} onClick={() => onAction('delete', file)} danger />
+          <MenuItem icon={Trash2} label={`删除 ${isMulti ? selectedCount + ' 项' : ''} (Delete)`} onClick={() => onAction('delete', file)} danger disabled={file.isVirtual} />
         </>
       ) : (
         // Empty Space Context Menu
