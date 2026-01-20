@@ -386,41 +386,6 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                         style={{
                             gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
                         }}
-                        onContextMenu={(e) => {
-                            if (!onContextMenu) return;
-                            if (e.defaultPrevented) {
-                                e.stopPropagation();
-                                return;
-                            }
-
-                            const container = e.currentTarget;
-                            const columnEls = Array.from(container.querySelectorAll('[data-dashboard-column="true"]'));
-                            if (columnEls.length === 0) return;
-
-                            const x = e.clientX;
-                            const y = e.clientY;
-                            let bestEl = null;
-                            let bestDist = Number.POSITIVE_INFINITY;
-
-                            for (const el of columnEls) {
-                                const r = el.getBoundingClientRect();
-                                const dx = x < r.left ? (r.left - x) : (x > r.right ? (x - r.right) : 0);
-                                const dy = y < r.top ? (r.top - y) : (y > r.bottom ? (y - r.bottom) : 0);
-                                const dist = dx * dx + dy * dy;
-                                if (dist < bestDist) {
-                                    bestDist = dist;
-                                    bestEl = el;
-                                }
-                            }
-
-                            const folderPath = bestEl?.dataset?.folderPath;
-                            const folder = allColumns.find(f => (f.path || '') === (folderPath || ''));
-                            if (!folder) return;
-
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onContextMenu(e, folder, 'content');
-                        }}
                     >
                         {allColumns.map((folder, index) => {
                             let color = COLUMN_COLORS[index % COLUMN_COLORS.length];
