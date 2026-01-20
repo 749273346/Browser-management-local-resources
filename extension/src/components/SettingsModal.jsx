@@ -34,9 +34,14 @@ const PRESET_WALLPAPERS = [
   }
 ];
 
-export default function SettingsModal({ isOpen, onClose, showToast }) {
+export default function SettingsModal({ isOpen, onClose, showToast, dashboardColumnCount = 4, onDashboardColumnCountChange, currentPath }) {
   const [activeTab, setActiveTab] = useState('appearance');
   const SERVER_URL = 'http://localhost:3001';
+  const currentPathLabel = (() => {
+      if (!currentPath) return '';
+      const parts = String(currentPath).split(/[/\\]+/).filter(Boolean);
+      return parts[parts.length - 1] || String(currentPath);
+  })();
   
   // Settings State
   const [bgImage, setBgImage] = useState(normalizeBgValue(localStorage.getItem('bgImage') || ''));
@@ -431,6 +436,34 @@ export default function SettingsModal({ isOpen, onClose, showToast }) {
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div>
+                             <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">看板布局</h3>
+                             <div className="bg-gray-50 dark:bg-slate-800/50 rounded-xl p-4 border border-gray-200 dark:border-slate-700">
+                                 <div className="flex items-center justify-between mb-2">
+                                     <label className="text-sm font-medium text-gray-700 dark:text-slate-200">当前目录每行显示列数</label>
+                                     <span className="text-sm font-bold text-primary-600 dark:text-primary-400">{dashboardColumnCount} 列</span>
+                                 </div>
+                                 <input 
+                                     type="range" 
+                                     min="1" 
+                                     max="8" 
+                                     step="1"
+                                     value={dashboardColumnCount} 
+                                     onChange={(e) => onDashboardColumnCountChange && onDashboardColumnCountChange(parseInt(e.target.value))}
+                                     className="w-full h-2 bg-gray-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
+                                 />
+                                 {currentPathLabel && (
+                                     <div className="mt-2 text-xs text-gray-500 dark:text-slate-400 truncate">
+                                         {currentPathLabel}
+                                     </div>
+                                 )}
+                                 <div className="flex justify-between text-xs text-gray-400 mt-1">
+                                     <span>1</span>
+                                     <span>8</span>
+                                 </div>
+                             </div>
                         </div>
 
                         <div>

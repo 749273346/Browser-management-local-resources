@@ -13,7 +13,11 @@ export default defineConfig({
           dest: '.'
         },
         {
-          src: 'public/icon*.png',
+          src: 'icon*.png',
+          dest: '.'
+        },
+        {
+          src: 'icon.svg',
           dest: '.'
         }
       ]

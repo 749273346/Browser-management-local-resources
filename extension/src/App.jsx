@@ -65,6 +65,19 @@ const sanitizeFolderViewModes = (raw) => {
   return next
 }
 
+const sanitizeDashboardColumnCounts = (raw) => {
+  const next = {}
+  for (const [k, v] of Object.entries(raw || {})) {
+    const nk = normalizePathKey(k)
+    if (!nk) continue
+    const n = parseInt(v, 10)
+    if (!Number.isFinite(n)) continue
+    if (n < 1 || n > 8) continue
+    next[nk] = n
+  }
+  return next
+}
+
 function App() {
   const SERVER_URL = 'http://localhost:3001';
 
@@ -79,6 +92,10 @@ function App() {
               bgImage: localStorage.getItem('bgImage'),
               glassOpacity: localStorage.getItem('glassOpacity'),
               glassBlur: localStorage.getItem('glassBlur'),
+              dashboardColumnCounts: sanitizeDashboardColumnCounts(JSON.parse(localStorage.getItem('dashboardColumnCounts') || '{}')),
+              dashboardTitle: localStorage.getItem('dashboardTitle'),
+              dashboardTitleStyle: localStorage.getItem('dashboardTitleStyle'),
+              dashboardTitleColor: localStorage.getItem('dashboardTitleColor'),
               ...overrides
           };
           await fetch(`${SERVER_URL}/api/settings`, {
@@ -137,12 +154,50 @@ function App() {
                   keys.forEach(key => {
                       if (settings[key]) {
                           const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key]) : settings[key];
-                          if (val !== localStorage.getItem(key)) {
+                          if (val != localStorage.getItem(key)) {
                               localStorage.setItem(key, val);
                               changed = true;
                           }
                       }
                   });
+
+                  let rawDashboardColumnCounts = settings.dashboardColumnCounts;
+                  if ((!rawDashboardColumnCounts || Object.keys(rawDashboardColumnCounts).length === 0) && settings.dashboardColumnCount) {
+                      const n = parseInt(settings.dashboardColumnCount, 10);
+                      const count = Number.isFinite(n) && n >= 1 && n <= 8 ? n : 4;
+                      const targetPathKey = normalizePathKey(settings.rootPath || localStorage.getItem('rootPath') || '');
+                      if (targetPathKey) {
+                          rawDashboardColumnCounts = { [targetPathKey]: count };
+                          updateServerSettings({ dashboardColumnCounts: rawDashboardColumnCounts }).catch(() => {});
+                      }
+                  }
+
+                  const serverDashboardColumnCounts = sanitizeDashboardColumnCounts(rawDashboardColumnCounts || {});
+                  const serverDashboardColumnCountsJson = JSON.stringify(serverDashboardColumnCounts);
+                  if (serverDashboardColumnCountsJson !== localStorage.getItem('dashboardColumnCounts')) {
+                      localStorage.setItem('dashboardColumnCounts', serverDashboardColumnCountsJson);
+                      changed = true;
+                  }
+
+                  if (settings.dashboardTitle && settings.dashboardTitle !== localStorage.getItem('dashboardTitle')) {
+                      localStorage.setItem('dashboardTitle', settings.dashboardTitle);
+                      changed = true;
+                  } else if (!settings.dashboardTitle) {
+                      const localTitle = localStorage.getItem('dashboardTitle');
+                      if (localTitle && localTitle !== '本地资源管理目录') {
+                          updateServerSettings({ dashboardTitle: localTitle }).catch(() => {});
+                      }
+                  }
+
+                  if (settings.dashboardTitleStyle && settings.dashboardTitleStyle !== localStorage.getItem('dashboardTitleStyle')) {
+                      localStorage.setItem('dashboardTitleStyle', settings.dashboardTitleStyle);
+                      changed = true;
+                  }
+                  
+                  if (settings.dashboardTitleColor && settings.dashboardTitleColor !== localStorage.getItem('dashboardTitleColor')) {
+                      localStorage.setItem('dashboardTitleColor', settings.dashboardTitleColor);
+                      changed = true;
+                  }
 
                   const serverFolderViewModes = sanitizeFolderViewModes(settings.folderViewModes || {});
                   const serverFolderViewModesJson = JSON.stringify(serverFolderViewModes);
@@ -154,6 +209,10 @@ function App() {
                   if (changed) {
                       setFolderColors(sanitizeFolderColors(settings.folderColors));
                       setFolderViewModes(serverFolderViewModes);
+                      setDashboardColumnCounts(serverDashboardColumnCounts);
+                      setDashboardTitle(localStorage.getItem('dashboardTitle') || '本地资源管理目录');
+                      setDashboardTitleStyle(localStorage.getItem('dashboardTitleStyle') || 'classic');
+                      setDashboardTitleColor(localStorage.getItem('dashboardTitleColor') || 'blue');
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
@@ -327,6 +386,84 @@ function App() {
           return {};
       }
   });
+
+  const [dashboardColumnCounts, setDashboardColumnCounts] = useState(() => {
+    try {
+      return sanitizeDashboardColumnCounts(JSON.parse(localStorage.getItem('dashboardColumnCounts') || '{}'));
+    } catch {
+      return {};
+    }
+  });
+
+  const [dashboardTitle, setDashboardTitle] = useState(() => {
+      return localStorage.getItem('dashboardTitle') || '本地资源管理目录';
+  });
+
+  const handleDashboardTitleChange = (newTitle) => {
+      const next = String(newTitle || '').trim();
+      if (!next) return;
+      setDashboardTitle(next);
+      localStorage.setItem('dashboardTitle', next);
+      updateServerSettings({ dashboardTitle: next }).catch(() => {});
+  };
+
+  const [dashboardTitleStyle, setDashboardTitleStyle] = useState(() => {
+      return localStorage.getItem('dashboardTitleStyle') || 'classic';
+  });
+
+  const handleDashboardTitleStyleChange = (style) => {
+      setDashboardTitleStyle(style);
+      localStorage.setItem('dashboardTitleStyle', style);
+      updateServerSettings({ dashboardTitleStyle: style }).catch(() => {});
+  };
+
+  const [dashboardTitleColor, setDashboardTitleColor] = useState(() => {
+      return localStorage.getItem('dashboardTitleColor') || 'blue';
+  });
+
+  const handleDashboardTitleColorChange = (color) => {
+      setDashboardTitleColor(color);
+      localStorage.setItem('dashboardTitleColor', color);
+      updateServerSettings({ dashboardTitleColor: color }).catch(() => {});
+  };
+
+  useEffect(() => {
+    const legacy = localStorage.getItem('dashboardColumnCount');
+    if (!legacy) return;
+    const hasNew = localStorage.getItem('dashboardColumnCounts');
+    if (hasNew) {
+      localStorage.removeItem('dashboardColumnCount');
+      return;
+    }
+    const n = parseInt(legacy, 10);
+    const count = Number.isFinite(n) && n >= 1 && n <= 8 ? n : 4;
+    const targetPathKey = normalizePathKey(path || localStorage.getItem('rootPath') || '');
+    if (!targetPathKey) {
+      localStorage.removeItem('dashboardColumnCount');
+      return;
+    }
+    const next = { [targetPathKey]: count };
+    localStorage.setItem('dashboardColumnCounts', JSON.stringify(next));
+    localStorage.removeItem('dashboardColumnCount');
+    setDashboardColumnCounts(next);
+    updateServerSettings({ dashboardColumnCounts: next }).catch(() => {});
+  }, [path]);
+
+  const currentDashboardColumnCount = dashboardColumnCounts[normalizePathKey(path)] || 4;
+
+  const handleDashboardColumnCountChange = (count) => {
+      const n = Number.isFinite(count) ? count : parseInt(count, 10);
+      if (!Number.isFinite(n)) return;
+      if (n < 1 || n > 8) return;
+      const targetPathKey = normalizePathKey(path);
+      if (!targetPathKey) return;
+      setDashboardColumnCounts(prev => {
+          const next = { ...prev, [targetPathKey]: n };
+          localStorage.setItem('dashboardColumnCounts', JSON.stringify(next));
+          updateServerSettings({ dashboardColumnCounts: next }).catch(() => {});
+          return next;
+      });
+  };
 
   // Folder Colors State
   const [folderColors, setFolderColors] = useState(() => {
@@ -861,6 +998,14 @@ function App() {
                     selectedPaths={selectedPaths}
                     onFileClick={handleFileClick}
                     onFileDoubleClick={handleFileDoubleClick}
+                    columnCount={currentDashboardColumnCount}
+                    dashboardTitle={dashboardTitle}
+                    onDashboardTitleChange={handleDashboardTitleChange}
+                    isRoot={isRoot}
+                    dashboardTitleStyle={dashboardTitleStyle}
+                    dashboardTitleColor={dashboardTitleColor}
+                    onDashboardTitleStyleChange={handleDashboardTitleStyleChange}
+                    onDashboardTitleColorChange={handleDashboardTitleColorChange}
                 />
             ) : currentViewMode === 'grid' ? (
                 <FileGrid 
@@ -902,6 +1047,9 @@ function App() {
         isOpen={isSettingsOpen} 
         onClose={() => setIsSettingsOpen(false)} 
         showToast={showToast}
+        dashboardColumnCount={currentDashboardColumnCount}
+        onDashboardColumnCountChange={handleDashboardColumnCountChange}
+        currentPath={path}
       />
 
       <ContextMenu 
