@@ -403,6 +403,10 @@ function App() {
       localStorage.setItem('sortConfig', JSON.stringify(sortConfig));
   }, [sortConfig]);
 
+  const nameCollator = useMemo(() => {
+      return new Intl.Collator('zh-CN', { numeric: true, sensitivity: 'base' });
+  }, []);
+
   const sortedFiles = useMemo(() => {
       const sortList = (list) => {
           return list.sort((a, b) => {
@@ -414,7 +418,9 @@ function App() {
               const multiplier = direction === 'asc' ? 1 : -1;
               
               if (key === 'name') {
-                  return a.name.localeCompare(b.name, 'zh-CN') * multiplier;
+                  const byName = nameCollator.compare(a.name, b.name);
+                  if (byName !== 0) return byName * multiplier;
+                  return nameCollator.compare(a.path, b.path) * multiplier;
               } else if (key === 'date') {
                   return ((a.mtimeMs || 0) - (b.mtimeMs || 0)) * multiplier;
               } else if (key === 'size') {
@@ -422,7 +428,11 @@ function App() {
               } else if (key === 'type') {
                    const typeA = a.isDirectory ? 'folder' : (a.name.split('.').pop() || '');
                    const typeB = b.isDirectory ? 'folder' : (b.name.split('.').pop() || '');
-                   return typeA.localeCompare(typeB) * multiplier;
+                   const byType = nameCollator.compare(typeA, typeB);
+                   if (byType !== 0) return byType * multiplier;
+                   const byName = nameCollator.compare(a.name, b.name);
+                   if (byName !== 0) return byName * multiplier;
+                   return nameCollator.compare(a.path, b.path) * multiplier;
               }
               return 0;
           }).map(item => {
@@ -434,7 +444,7 @@ function App() {
       };
       
       return sortList([...visibleFiles]);
-  }, [visibleFiles, sortConfig]);
+  }, [visibleFiles, sortConfig, nameCollator]);
 
   const flatFiles = useMemo(() => {
       const flatten = (list) => {
