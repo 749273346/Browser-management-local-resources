@@ -670,15 +670,26 @@ const toBoolean = (value) => {
     return undefined;
 };
 
+const toggleAutoStartViaVbs = (enabled) => {
+    if (process.platform !== 'win32') return;
+    const rootDir = path.join(__dirname, '..');
+    const vbsPath = path.join(rootDir, 'start-server-hidden.vbs');
+    const arg = enabled ? '/installstartup' : '/uninstallstartup';
+    execFile('wscript.exe', ['//B', '//NoLogo', vbsPath, arg], { windowsHide: true }, (err) => {
+        if (err) {
+            try {
+                logger.warn('Failed to toggle autoStart via VBS', err);
+            } catch {}
+        }
+    });
+};
+
 const applyAutoStartSetting = (enabled) => {
     if (!isElectronRuntime()) return;
     const val = toBoolean(enabled);
     if (typeof val !== 'boolean') return;
     try {
-        const electron = require('electron');
-        if (electron?.app?.setLoginItemSettings) {
-            electron.app.setLoginItemSettings({ openAtLogin: val });
-        }
+        toggleAutoStartViaVbs(val);
     } catch (e) {
         try {
             logger.warn('Failed to apply autoStart setting', e);

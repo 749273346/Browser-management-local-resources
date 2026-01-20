@@ -1,4 +1,5 @@
 const { app, BrowserWindow, Tray, Menu, shell, nativeImage, ipcMain } = require('electron');
+const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const logger = require('./logger');
@@ -168,26 +169,98 @@ function writeSettingsSafe(settings) {
   }
 }
 
-function getAutoStartEffective() {
-  try {
-    const state = app.getLoginItemSettings();
-    return !!state.openAtLogin;
-  } catch {
-    return false;
+const WIN_RUN_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+
+function getRootDir() {
+  return path.resolve(__dirname, '..');
+}
+
+function getVbsPath() {
+  return path.join(getRootDir(), 'start-server-hidden.vbs');
+}
+
+function getStartupShortcutPath() {
+  const appData = process.env.APPDATA;
+  if (!appData) return null;
+  return path.join(appData, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'LocalResourceManager.lnk');
+}
+
+function parseRegQuery(stdout) {
+  const lines = String(stdout || '').split(/\r?\n/);
+  const out = [];
+  for (const line of lines) {
+    const m = line.match(/^\s{4}(.+?)\s{2,}(REG_\w+)\s{2,}(.+)\s*$/);
+    if (!m) continue;
+    const name = m[1].trim();
+    const type = m[2].trim();
+    const data = m[3].trim();
+    if (!name || !type) continue;
+    out.push({ name, type, data });
   }
+  return out;
+}
+
+function cleanupBrokenAutoStartEntries() {
+  if (process.platform !== 'win32') return;
+  const rootDirLower = getRootDir().toLowerCase();
+  const serverDirLower = __dirname.toLowerCase();
+
+  const shortcutPath = getStartupShortcutPath();
+  if (shortcutPath) {
+    try {
+      if (fs.existsSync(shortcutPath)) fs.unlinkSync(shortcutPath);
+    } catch {}
+  }
+
+  execFile('reg.exe', ['query', WIN_RUN_KEY], { windowsHide: true }, (err, stdout) => {
+    if (err) return;
+    const entries = parseRegQuery(stdout);
+    for (const entry of entries) {
+      const dataLower = String(entry.data || '').toLowerCase();
+      const isElectronDirect =
+        dataLower.includes('\\node_modules\\electron\\dist\\electron.exe') ||
+        dataLower.includes('\\node_modules\\.bin\\electron.cmd') ||
+        dataLower.includes('electron.exe');
+      const looksLikeOurRepo = dataLower.includes(rootDirLower) || dataLower.includes(serverDirLower);
+      if (!isElectronDirect || !looksLikeOurRepo) continue;
+      execFile('reg.exe', ['delete', WIN_RUN_KEY, '/v', entry.name, '/f'], { windowsHide: true }, () => {});
+    }
+  });
+}
+
+function runAutoStartScript(enabled) {
+  if (process.platform !== 'win32') return;
+  const vbsPath = getVbsPath();
+  if (!fs.existsSync(vbsPath)) return;
+  const arg = enabled ? '/installstartup' : '/uninstallstartup';
+  execFile('wscript.exe', ['//B', '//NoLogo', vbsPath, arg], { windowsHide: true }, (err) => {
+    if (err) {
+      try {
+        logger.warn('Failed to toggle autoStart via VBS', err);
+      } catch {}
+    }
+  });
+}
+
+function getAutoStartEffective() {
+  const settings = readSettingsSafe();
+  return typeof settings.autoStart === 'boolean' ? settings.autoStart : false;
 }
 
 function setAutoStartEnabled(enabled) {
   const nextEnabled = !!enabled;
   let ok = true;
+
   try {
-    app.setLoginItemSettings({ openAtLogin: nextEnabled });
+    runAutoStartScript(nextEnabled);
+    cleanupBrokenAutoStartEntries();
   } catch (e) {
     ok = false;
     try {
-      logger.warn('Failed to set login item settings', e);
+      logger.warn('Failed to apply autoStart', e);
     } catch {}
   }
+
   const current = readSettingsSafe();
   current.autoStart = nextEnabled;
   writeSettingsSafe(current);
@@ -290,15 +363,8 @@ function startServer() {
 app.whenReady().then(() => {
   logger.info('App ready');
   const settings = readSettingsSafe();
-  if (typeof settings.autoStart === 'boolean') {
-    try {
-      app.setLoginItemSettings({ openAtLogin: settings.autoStart });
-    } catch (e) {
-      try {
-        logger.warn('Failed to apply autoStart on boot', e);
-      } catch {}
-    }
-  }
+  cleanupBrokenAutoStartEntries();
+  if (typeof settings.autoStart === 'boolean') runAutoStartScript(settings.autoStart);
   const initialAutoStart = typeof settings.autoStart === 'boolean' ? settings.autoStart : getAutoStartEffective();
   startServer();
   createTray(initialAutoStart);
@@ -308,14 +374,12 @@ app.whenReady().then(() => {
   });
   
   app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // Log the attempt for debugging
     try {
       logger.info('Second instance detected - showing main window', { commandLine, workingDirectory });
     } catch {}
-
-    // Always show window when second instance is detected
-    // Removed restriction that required --show/--open flags
-    showMainWindow();
+    const args = Array.isArray(commandLine) ? commandLine : [];
+    const shouldShow = args.includes('--show') || args.includes('--open');
+    if (shouldShow) showMainWindow();
   });
 });
 

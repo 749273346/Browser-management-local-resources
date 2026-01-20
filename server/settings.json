@@ -6,15 +6,11 @@
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理": "red",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "yellow",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/新建文件夹": "orange",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/.git": "blue",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/.trae": "red",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/.vscode": "orange",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": "yellow",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/说明文档": "green",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/相关资料": "purple",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/extension": "gray",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/resources": "blue",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/server": "red"
+    "d:/1-材料管理库": "blue",
+    "d:/工时统计": "red",
+    "d:/设备故障统计": "orange",
+    "d:/自主超链接": "yellow",
+    "d:/system volume information": "green"
   },
   "folderViewModes": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "dashboard",
@@ -22,7 +18,7 @@
     "d:": "dashboard",
     "d:/工时统计": "dashboard"
   },
-  "appTheme": "classic-system",
+  "appTheme": "glass-morphism",
   "colorMode": "day",
   "bgImage": "",
   "glassOpacity": "0.5",
@@ -35,5 +31,9 @@
   "dashboardTitleStyle": "minimal",
   "dashboardTitleColor": "gray",
   "dashboardTitleSize": "text-4xl",
-  "dashboardTitleHidden": "true"
+  "dashboardTitleHidden": "false",
+  "dashboardTitleHiddenBySource": {
+    "main": false,
+    "usb": true
+  }
 }

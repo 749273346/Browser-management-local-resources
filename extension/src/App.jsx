@@ -28,6 +28,16 @@ const getWindowsDriveRoot = (p) => {
 }
 
 const CLIPBOARD_STORAGE_KEY = 'lrm_clipboard_items'
+const DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY = 'dashboardTitleHiddenBySource'
+
+const getInterfaceKey = () => {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('source') || 'main'
+  } catch {
+    return 'main'
+  }
+}
 
 const loadClipboardItems = () => {
   try {
@@ -118,7 +128,7 @@ function App() {
               dashboardTitleStyle: localStorage.getItem('dashboardTitleStyle'),
               dashboardTitleColor: localStorage.getItem('dashboardTitleColor'),
               dashboardTitleSize: localStorage.getItem('dashboardTitleSize'),
-              dashboardTitleHidden: localStorage.getItem('dashboardTitleHidden'),
+              dashboardTitleHiddenBySource: JSON.parse(localStorage.getItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY) || '{}'),
               ...overrides
           };
           await fetch(`${SERVER_URL}/api/settings`, {
@@ -255,11 +265,30 @@ function App() {
                       }
                   }
 
-                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleHidden')) {
-                      const hidden = String(settings.dashboardTitleHidden ?? '');
-                      if (hidden !== (localStorage.getItem('dashboardTitleHidden') || '')) {
-                          localStorage.setItem('dashboardTitleHidden', hidden);
-                          changed = true;
+                  const coerceHiddenBySource = (raw) => {
+                      if (!raw || typeof raw !== 'object') return {}
+                      const next = {}
+                      for (const [k, v] of Object.entries(raw)) {
+                          const b = v === true || v === 'true'
+                          next[String(k)] = b
+                      }
+                      return next
+                  }
+
+                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleHiddenBySource')) {
+                      const next = coerceHiddenBySource(settings.dashboardTitleHiddenBySource || {})
+                      const json = JSON.stringify(next)
+                      if (json !== (localStorage.getItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY) || '')) {
+                          localStorage.setItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY, json)
+                          changed = true
+                      }
+                  } else if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleHidden')) {
+                      const hidden = String(settings.dashboardTitleHidden ?? '')
+                      const next = { main: hidden === 'true' }
+                      const json = JSON.stringify(next)
+                      if (json !== (localStorage.getItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY) || '')) {
+                          localStorage.setItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY, json)
+                          changed = true
                       }
                   }
 
@@ -278,8 +307,12 @@ function App() {
                       setDashboardTitleStyle(localStorage.getItem('dashboardTitleStyle') || 'minimal');
                       setDashboardTitleColor(localStorage.getItem('dashboardTitleColor') || 'blue');
                       setDashboardTitleSize(localStorage.getItem('dashboardTitleSize') || 'text-2xl');
-                      const hiddenVal = localStorage.getItem('dashboardTitleHidden');
-                      setDashboardTitleHidden(hiddenVal === null ? true : hiddenVal === 'true');
+                      try {
+                          const raw = JSON.parse(localStorage.getItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY) || '{}')
+                          setDashboardTitleHiddenBySource(raw && typeof raw === 'object' ? raw : {})
+                      } catch {
+                          setDashboardTitleHiddenBySource({})
+                      }
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
@@ -522,17 +555,42 @@ function App() {
       updateServerSettings({ dashboardTitleSize: size }).catch(() => {});
   };
 
-  const [dashboardTitleHidden, setDashboardTitleHidden] = useState(() => {
-      const val = localStorage.getItem('dashboardTitleHidden');
-      return val === null ? true : val === 'true';
-  });
+  const interfaceKey = useMemo(() => getInterfaceKey(), [])
+
+  const [dashboardTitleHiddenBySource, setDashboardTitleHiddenBySource] = useState(() => {
+      let raw
+      try {
+          raw = JSON.parse(localStorage.getItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY) || '{}')
+      } catch {
+          raw = null
+      }
+      if (raw && typeof raw === 'object') return raw
+      const legacy = localStorage.getItem('dashboardTitleHidden')
+      if (legacy === null) return {}
+      const initial = { main: legacy === 'true' }
+      localStorage.setItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY, JSON.stringify(initial))
+      return initial
+  })
+
+  const dashboardTitleHidden = (() => {
+      const v = dashboardTitleHiddenBySource?.[interfaceKey]
+      if (typeof v === 'boolean') return v
+      if (v === 'true') return true
+      if (v === 'false') return false
+      const legacy = localStorage.getItem('dashboardTitleHidden')
+      return legacy === null ? true : legacy === 'true'
+  })()
 
   const handleDashboardTitleHiddenChange = (hidden) => {
-      const val = String(hidden);
-      setDashboardTitleHidden(hidden);
-      localStorage.setItem('dashboardTitleHidden', val);
-      updateServerSettings({ dashboardTitleHidden: val }).catch(() => {});
-  };
+      const nextHidden = !!hidden
+      setDashboardTitleHiddenBySource(prev => {
+          const base = prev && typeof prev === 'object' ? prev : {}
+          const next = { ...base, [interfaceKey]: nextHidden }
+          localStorage.setItem(DASHBOARD_TITLE_HIDDEN_BY_SOURCE_KEY, JSON.stringify(next))
+          updateServerSettings({ dashboardTitleHiddenBySource: next }).catch(() => {})
+          return next
+      })
+  }
 
   useEffect(() => {
     const legacy = localStorage.getItem('dashboardColumnCount');

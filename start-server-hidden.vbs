@@ -17,26 +17,33 @@ If WScript.Arguments.Count > 0 Then
       silent = True
     ElseIf a = "/installstartup" Or a = "-installstartup" Or a = "installstartup" Or a = "/install-startup" Then
       installStartup = True
+    ElseIf a = "/uninstallstartup" Or a = "-uninstallstartup" Or a = "uninstallstartup" Or a = "/uninstall-startup" Then
+      installStartup = False
+      ' Remove startup items
+      Dim startupDir2, lnkPath2
+      startupDir2 = WshShell.SpecialFolders("Startup")
+      lnkPath2 = startupDir2 & "\LocalResourceManager.lnk"
+      
+      On Error Resume Next
+      WshShell.RegDelete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LocalResourceManager"
+      CreateObject("Scripting.FileSystemObject").DeleteFile lnkPath2, True
+      Err.Clear
+      On Error GoTo 0
+      WScript.Quit 0
     End If
   Next
 End If
 
 If installStartup Then
-  Dim startupDir, lnkPath, s, regValue, vbsPath
+  Dim startupDir, lnkPath, regValue, vbsPath
   startupDir = WshShell.SpecialFolders("Startup")
   lnkPath = startupDir & "\LocalResourceManager.lnk"
   vbsPath = rootDir & "start-server-hidden.vbs"
   regValue = Chr(34) & WScript.FullName & Chr(34) & " //B //NoLogo " & Chr(34) & vbsPath & Chr(34) & " /silent"
   On Error Resume Next
   WshShell.RegWrite "HKCU\Software\Microsoft\Windows\CurrentVersion\Run\LocalResourceManager", regValue, "REG_SZ"
+  CreateObject("Scripting.FileSystemObject").DeleteFile lnkPath, True
   Err.Clear
-  Set s = WshShell.CreateShortcut(lnkPath)
-  s.TargetPath = WScript.FullName
-  s.Arguments = "//B //NoLogo " & Chr(34) & vbsPath & Chr(34) & " /silent"
-  s.WorkingDirectory = rootDir
-  s.Description = "Local Resource Manager Background Service"
-  s.Save
-  Set s = Nothing
   On Error GoTo 0
   WScript.Quit 0
 End If
