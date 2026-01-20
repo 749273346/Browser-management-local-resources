@@ -1,4 +1,4 @@
-import { Folder, File, FileImage, FileText, FileCode, EyeOff } from 'lucide-react';
+import { Folder, File, FileImage, FileText, FileCode, FileSpreadsheet, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, EyeOff } from 'lucide-react';
 import { getEffectiveColorScheme } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory, color = null) => {
@@ -14,25 +14,53 @@ const getFileIcon = (name, isDirectory, color = null) => {
         return <Folder className="text-yellow-400 fill-yellow-100" size={48} strokeWidth={1} />;
     }
     
-    const ext = name.split('.').pop().toLowerCase();
-    switch (ext) {
-        case 'png':
-        case 'jpg':
-        case 'jpeg':
-        case 'gif':
-            return <FileImage className="text-purple-500" size={48} strokeWidth={1} />;
-        case 'txt':
-        case 'md':
-            return <FileText className="text-gray-500 dark:text-slate-300" size={48} strokeWidth={1} />;
-        case 'js':
-        case 'jsx':
-        case 'ts':
-        case 'tsx':
-        case 'json':
-            return <FileCode className="text-blue-500" size={48} strokeWidth={1} />;
-        default:
-            return <File className="text-gray-400 dark:text-slate-400" size={48} strokeWidth={1} />;
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+
+    if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) {
+        return <FileSpreadsheet className="text-green-600" size={48} strokeWidth={1} />;
     }
+
+    if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'ppt', 'pptx', 'key', 'pages', 'wps', 'dps'].includes(ext)) {
+        return <FileText className="text-blue-500 dark:text-primary-300" size={48} strokeWidth={1} />;
+    }
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'heic', 'heif', 'avif'].includes(ext)) {
+        return <FileImage className="text-purple-500" size={48} strokeWidth={1} />;
+    }
+
+    if (['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp'].includes(ext)) {
+        return <Film className="text-red-500" size={48} strokeWidth={1} />;
+    }
+
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma', 'opus'].includes(ext)) {
+        return <Music className="text-pink-500" size={48} strokeWidth={1} />;
+    }
+
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'zst', 'iso'].includes(ext)) {
+        return <FileArchive className="text-amber-600" size={48} strokeWidth={1} />;
+    }
+
+    if (['exe', 'msi', 'bat', 'cmd', 'ps1', 'sh', 'app', 'apk', 'jar'].includes(ext)) {
+        return <AppWindow className="text-emerald-600" size={48} strokeWidth={1} />;
+    }
+
+    if (['lnk', 'url'].includes(ext)) {
+        return <Link2 className="text-indigo-600" size={48} strokeWidth={1} />;
+    }
+
+    if (['ttf', 'otf', 'woff', 'woff2'].includes(ext)) {
+        return <FileType2 className="text-fuchsia-600" size={48} strokeWidth={1} />;
+    }
+
+    if (['db', 'sqlite', 'sqlite3', 'mdb', 'accdb'].includes(ext)) {
+        return <Database className="text-cyan-600" size={48} strokeWidth={1} />;
+    }
+
+    if (['js', 'jsx', 'ts', 'tsx', 'json', 'html', 'css', 'scss', 'less', 'xml', 'yaml', 'yml', 'ini', 'toml', 'conf', 'log', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'php', 'rb', 'lua', 'sql', 'psd', 'ai'].includes(ext)) {
+        return <FileCode className="text-sky-600" size={48} strokeWidth={1} />;
+    }
+
+    return <File className="text-gray-400 dark:text-slate-400" size={48} strokeWidth={1} />;
 };
 
 export default function FileGrid({ files, onContextMenu, isHidden, renamingName, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {

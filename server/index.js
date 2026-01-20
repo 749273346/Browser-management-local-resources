@@ -197,11 +197,14 @@ const getFilesRecursive = async (dir, currentDepth, maxDepth) => {
 
 // File Type Definitions
 const FILE_TYPES = {
-    doc: ['.txt', '.md', '.doc', '.docx', '.pdf', '.rtf', '.odt', '.ppt', '.pptx'],
-    sheet: ['.xls', '.xlsx', '.csv', '.ods'],
-    image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tiff'],
-    video: ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm'],
-    audio: ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a']
+    doc: ['.txt', '.md', '.pdf', '.doc', '.docx', '.rtf', '.odt', '.ppt', '.pptx', '.wps', '.dps', '.key', '.pages'],
+    sheet: ['.xls', '.xlsx', '.csv', '.tsv', '.ods', '.numbers'],
+    image: ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.ico', '.tif', '.tiff', '.heic', '.heif', '.avif'],
+    video: ['.mp4', '.mkv', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v', '.3gp'],
+    audio: ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.m4a', '.wma', '.opus'],
+    archive: ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.zst', '.iso'],
+    app: ['.exe', '.msi', '.bat', '.cmd', '.ps1', '.sh', '.apk', '.jar'],
+    code: ['.js', '.jsx', '.ts', '.tsx', '.json', '.html', '.css', '.scss', '.less', '.xml', '.yaml', '.yml', '.ini', '.toml', '.conf', '.log', '.py', '.java', '.c', '.cpp', '.h', '.hpp', '.cs', '.go', '.rs', '.php', '.rb', '.lua', '.sql']
 };
 
 const SEARCH_LIMIT = 100; // Limit results

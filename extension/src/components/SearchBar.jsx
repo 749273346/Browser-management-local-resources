@@ -1,7 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { 
-    Search, X, Folder, File, FileText, FileSpreadsheet, 
-    FileImage, Film, Music, Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown
+    Search, X, Folder, File, FileText, FileSpreadsheet, FileCode,
+    FileImage, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2,
+    Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -11,6 +12,9 @@ const CATEGORIES = [
     { id: 'image', label: '图片' },
     { id: 'video', label: '视频' },
     { id: 'audio', label: '音频' },
+    { id: 'archive', label: '压缩包' },
+    { id: 'app', label: '程序' },
+    { id: 'code', label: '代码' },
 ];
 
 const MAX_HISTORY = 5;
@@ -21,23 +25,51 @@ const nameCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 
 const getFileIcon = (name, isDirectory) => {
     if (isDirectory) return <Folder className="text-yellow-500" size={18} />;
     
-    // Check extension for specific styling
-    const ext = name.split('.').pop().toLowerCase();
-    
-    if (['xls', 'xlsx', 'csv', 'ods'].includes(ext)) 
+    const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
+
+    if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) {
         return <FileSpreadsheet className="text-green-600" size={18} />;
-    
-    if (['doc', 'docx', 'pdf', 'txt', 'md'].includes(ext)) 
+    }
+
+    if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'ppt', 'pptx', 'key', 'pages', 'wps', 'dps'].includes(ext)) {
         return <FileText className="text-blue-500" size={18} />;
-    
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) 
+    }
+
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'heic', 'heif', 'avif'].includes(ext)) {
         return <FileImage className="text-purple-500" size={18} />;
-    
-    if (['mp4', 'mkv', 'avi', 'mov'].includes(ext)) 
+    }
+
+    if (['mp4', 'mkv', 'avi', 'mov', 'wmv', 'flv', 'webm', 'm4v', '3gp'].includes(ext)) {
         return <Film className="text-red-500" size={18} />;
-        
-    if (['mp3', 'wav', 'flac'].includes(ext)) 
+    }
+
+    if (['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a', 'wma', 'opus'].includes(ext)) {
         return <Music className="text-pink-500" size={18} />;
+    }
+
+    if (['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz', 'zst', 'iso'].includes(ext)) {
+        return <FileArchive className="text-amber-600" size={18} />;
+    }
+
+    if (['exe', 'msi', 'bat', 'cmd', 'ps1', 'sh', 'app', 'apk', 'jar'].includes(ext)) {
+        return <AppWindow className="text-emerald-600" size={18} />;
+    }
+
+    if (['js', 'jsx', 'ts', 'tsx', 'json', 'html', 'css', 'scss', 'less', 'xml', 'yaml', 'yml', 'ini', 'toml', 'conf', 'log', 'py', 'java', 'c', 'cpp', 'h', 'hpp', 'cs', 'go', 'rs', 'php', 'rb', 'lua', 'sql', 'psd', 'ai'].includes(ext)) {
+        return <FileCode className="text-sky-600" size={18} />;
+    }
+
+    if (['ttf', 'otf', 'woff', 'woff2'].includes(ext)) {
+        return <FileType2 className="text-fuchsia-600" size={18} />;
+    }
+
+    if (['db', 'sqlite', 'sqlite3', 'mdb', 'accdb'].includes(ext)) {
+        return <Database className="text-cyan-600" size={18} />;
+    }
+
+    if (['lnk', 'url'].includes(ext)) {
+        return <Link2 className="text-indigo-600" size={18} />;
+    }
 
     return <File className="text-gray-400" size={18} />;
 };
