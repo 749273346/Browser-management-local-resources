@@ -1,9 +1,26 @@
 {
-  "rootPath": "E:\\QC-攻关小组\\正在进行项目\\浏览器资源管理\\Browser-management-local-resources\\测试资源库",
+  "rootPath": "E:\\QC-攻关小组\\正在进行项目\\自主超链接\\Autonomous-hyperlink\\测试文件",
   "folderColors": {
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "red",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理": "orange",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "yellow"
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/__pycache__": "red",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/1-上级文": "green",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/10-事项通知": "yellow",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/11-年度职教": "green",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/12-其他": "purple",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/13-长效文件库": "gray",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/14-学习扫描文件或录音": "blue",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/15-安全预警": "red",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/16-水电质量通报": "yellow",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/2-其他": "green",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/2-行政函": "purple",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/3-行政文": "gray",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/4-铁路传真电报": "blue",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/5-情况通报": "red",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/6-党群函": "yellow",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/7-党群文": "green",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/8-会议纪要": "purple",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/9-停电计划": "gray",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/dist": "blue",
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/build": "blue"
   },
   "folderViewModes": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "dashboard",
@@ -11,13 +28,15 @@
   },
   "appTheme": "iron-spirit",
   "colorMode": "day",
-  "bgImage": "/wallpapers/gz_hsr_crh1a.jpg?v=3",
+  "bgImage": "",
   "glassOpacity": "0.8",
   "glassBlur": "12",
   "dashboardColumnCounts": {
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": 3
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件": 3
   },
   "dashboardTitle": "惠来电力工区台账管理目录",
-  "dashboardTitleStyle": "classic",
-  "dashboardTitleColor": "dark"
+  "dashboardTitleStyle": "glass",
+  "dashboardTitleColor": "green",
+  "dashboardTitleSize": "text-4xl",
+  "dashboardTitleHidden": "false"
 }

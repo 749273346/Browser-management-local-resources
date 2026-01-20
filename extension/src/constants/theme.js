@@ -3,50 +3,50 @@
 export const COLUMN_COLORS = [
     { 
         id: 'blue', 
-        bg: 'bg-blue-50 dark:bg-blue-900/20', 
-        border: 'border-blue-200 dark:border-blue-800', 
-        header: 'bg-blue-100 dark:bg-blue-900/40', 
-        text: 'text-blue-700 dark:text-blue-200', 
+        bg: 'bg-blue-100 dark:bg-blue-900/30', 
+        border: 'border-blue-300 dark:border-blue-700', 
+        header: 'bg-blue-200 dark:bg-blue-900/50', 
+        text: 'text-blue-800 dark:text-blue-100', 
         name: '谷歌蓝' // Google Blue
     },
     { 
         id: 'red', 
-        bg: 'bg-red-50 dark:bg-red-900/20', 
-        border: 'border-red-200 dark:border-red-800', 
-        header: 'bg-red-100 dark:bg-red-900/40', 
-        text: 'text-red-700 dark:text-red-200', 
+        bg: 'bg-red-100 dark:bg-red-900/30', 
+        border: 'border-red-300 dark:border-red-700', 
+        header: 'bg-red-200 dark:bg-red-900/50', 
+        text: 'text-red-800 dark:text-red-100', 
         name: '谷歌红' // Google Red
     },
     { 
         id: 'yellow', 
-        bg: 'bg-yellow-50 dark:bg-yellow-900/20', 
-        border: 'border-yellow-200 dark:border-yellow-800', 
-        header: 'bg-yellow-100 dark:bg-yellow-900/40', 
-        text: 'text-yellow-700 dark:text-yellow-200', 
+        bg: 'bg-yellow-100 dark:bg-yellow-900/30', 
+        border: 'border-yellow-300 dark:border-yellow-700', 
+        header: 'bg-yellow-200 dark:bg-yellow-900/50', 
+        text: 'text-yellow-800 dark:text-yellow-100', 
         name: '谷歌黄' // Google Yellow
     },
     { 
         id: 'green', 
-        bg: 'bg-green-50 dark:bg-green-900/20', 
-        border: 'border-green-200 dark:border-green-800', 
-        header: 'bg-green-100 dark:bg-green-900/40', 
-        text: 'text-green-700 dark:text-green-200', 
+        bg: 'bg-green-100 dark:bg-green-900/30', 
+        border: 'border-green-300 dark:border-green-700', 
+        header: 'bg-green-200 dark:bg-green-900/50', 
+        text: 'text-green-800 dark:text-green-100', 
         name: '谷歌绿' // Google Green
     },
     { 
         id: 'purple', 
-        bg: 'bg-purple-50 dark:bg-purple-900/20', 
-        border: 'border-purple-200 dark:border-purple-800', 
-        header: 'bg-purple-100 dark:bg-purple-900/40', 
-        text: 'text-purple-700 dark:text-purple-200', 
+        bg: 'bg-purple-100 dark:bg-purple-900/30', 
+        border: 'border-purple-300 dark:border-purple-700', 
+        header: 'bg-purple-200 dark:bg-purple-900/50', 
+        text: 'text-purple-800 dark:text-purple-100', 
         name: '表单紫' // Forms Purple
     },
     { 
         id: 'gray', 
-        bg: 'bg-gray-50 dark:bg-gray-900/20', 
-        border: 'border-gray-200 dark:border-gray-800', 
-        header: 'bg-gray-100 dark:bg-gray-900/40', 
-        text: 'text-gray-700 dark:text-gray-200', 
+        bg: 'bg-gray-100 dark:bg-gray-900/30', 
+        border: 'border-gray-300 dark:border-gray-700', 
+        header: 'bg-gray-200 dark:bg-gray-900/50', 
+        text: 'text-gray-800 dark:text-gray-100', 
         name: '经典灰' // Classic Gray
     }
 ];

@@ -5,6 +5,7 @@ import { COLUMN_COLORS } from '../constants/theme';
 export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard, selectedCount = 1 }) {
   const menuRef = useRef(null);
   const isMulti = selectedCount > 1;
+  const isDir = !!file?.isDirectory || Array.isArray(file?.children);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -85,10 +86,10 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
           <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider truncate">
              {isMulti ? `已选择 ${selectedCount} 项` : file.name}
           </div>
-          {!isMulti && file.isDirectory && !file.isVirtual && (
+          {!isMulti && isDir && !file.isVirtual && (
              <MenuItem icon={FolderOpen} label="打开 (Open)" onClick={() => onAction('open', file)} />
           )}
-          {(isLevel1 || file.isVirtual) && file.isDirectory && (
+          {(isLevel1 || file.isVirtual) && isDir && (
              <div className="px-3 py-2">
                  <div className="text-xs font-semibold text-gray-400 dark:text-slate-400 mb-2 uppercase tracking-wider">设置颜色 (Color)</div>
                  <div className="flex space-x-2">

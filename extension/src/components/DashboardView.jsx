@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Folder, File, FileImage, FileText, FileCode, ChevronRight, EyeOff } from 'lucide-react';
+import { Folder, File, FileImage, FileText, FileCode, ChevronRight, EyeOff, Eye } from 'lucide-react';
 import { COLUMN_COLORS, getEffectiveColorScheme } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory) => {
@@ -26,12 +26,19 @@ const TITLE_STYLES = {
 };
 
 const TITLE_COLORS = {
-    BLUE: { id: 'blue', label: '谷歌蓝', from: 'from-blue-500', via: 'via-blue-600', to: 'to-blue-700', text: 'text-blue-600', ring: 'ring-blue-500' },
-    RED: { id: 'red', label: '谷歌红', from: 'from-red-500', via: 'via-red-600', to: 'to-red-700', text: 'text-red-600', ring: 'ring-red-500' },
-    YELLOW: { id: 'yellow', label: '谷歌黄', from: 'from-yellow-400', via: 'via-yellow-500', to: 'to-yellow-600', text: 'text-yellow-600', ring: 'ring-yellow-500' },
-    GREEN: { id: 'green', label: '谷歌绿', from: 'from-green-500', via: 'via-green-600', to: 'to-green-700', text: 'text-green-600', ring: 'ring-green-500' },
-    PURPLE: { id: 'purple', label: '表单紫', from: 'from-purple-500', via: 'via-purple-600', to: 'to-purple-700', text: 'text-purple-600', ring: 'ring-purple-500' },
-    GRAY: { id: 'gray', label: '经典灰', from: 'from-slate-500', via: 'via-slate-600', to: 'to-slate-700', text: 'text-slate-600', ring: 'ring-slate-500' },
+    BLUE: { id: 'blue', label: '谷歌蓝', from: 'from-blue-400', via: 'via-blue-500', to: 'to-blue-600', text: 'text-blue-500', ring: 'ring-blue-400' },
+    RED: { id: 'red', label: '谷歌红', from: 'from-red-400', via: 'via-red-500', to: 'to-red-600', text: 'text-red-500', ring: 'ring-red-400' },
+    YELLOW: { id: 'yellow', label: '谷歌黄', from: 'from-yellow-300', via: 'via-yellow-400', to: 'to-yellow-500', text: 'text-yellow-500', ring: 'ring-yellow-400' },
+    GREEN: { id: 'green', label: '谷歌绿', from: 'from-green-400', via: 'via-green-500', to: 'to-green-600', text: 'text-green-500', ring: 'ring-green-400' },
+    PURPLE: { id: 'purple', label: '表单紫', from: 'from-purple-400', via: 'via-purple-500', to: 'to-purple-600', text: 'text-purple-500', ring: 'ring-purple-400' },
+    GRAY: { id: 'gray', label: '经典灰', from: 'from-slate-400', via: 'via-slate-500', to: 'to-slate-600', text: 'text-slate-500', ring: 'ring-slate-400' },
+};
+
+const TITLE_SIZES = {
+    SMALL: { id: 'text-xl', label: '小' },
+    NORMAL: { id: 'text-2xl', label: '中' },
+    LARGE: { id: 'text-4xl', label: '大' },
+    HUGE: { id: 'text-6xl', label: '特大' }
 };
 
 const DashboardTitle = ({ 
@@ -39,8 +46,12 @@ const DashboardTitle = ({
     onTitleChange, 
     style = 'classic', 
     color = 'blue', 
+    size = 'text-2xl',
     onStyleChange, 
-    onColorChange 
+    onColorChange,
+    onSizeChange,
+    isHidden,
+    onToggleHidden
 }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [localTitle, setLocalTitle] = useState(title);
@@ -112,7 +123,7 @@ const DashboardTitle = ({
                     }}
                     onClick={(e) => e.stopPropagation()}
                     className={`
-                        bg-transparent text-2xl font-bold text-center outline-none border-b-2 font-serif min-w-[320px] w-full
+                        bg-transparent ${size} font-bold text-center outline-none border-b-2 font-serif min-w-[320px] w-full
                         ${(isMinimal || isModern) ? 'text-gray-800 dark:text-white border-primary-500' : 'text-white border-white/50'}
                     `}
                 />
@@ -120,7 +131,7 @@ const DashboardTitle = ({
         }
         return (
             <h1 className={`
-                text-2xl font-bold tracking-wide font-serif select-none transition-all
+                ${size} font-bold tracking-wide font-serif select-none transition-all
                 ${(isMinimal || isModern) ? 'text-gray-800 dark:text-white' : 'text-white drop-shadow-lg'}
                 ${isModern ? `bg-gradient-to-r ${colorConfig.from} ${colorConfig.via} ${colorConfig.to} bg-clip-text text-transparent` : ''}
             `}>
@@ -132,7 +143,7 @@ const DashboardTitle = ({
     return (
         <div className="w-full flex justify-center mb-6 shrink-0 z-10 relative group">
             <div
-                className={`relative transition-all duration-300 ${canEdit ? 'cursor-pointer' : ''} ${isEditing ? 'scale-100' : 'hover:scale-[1.01]'}`}
+                className={`relative transition-all duration-300 ${canEdit ? 'cursor-pointer' : ''} ${isEditing ? 'scale-100' : 'hover:scale-[1.01]'} ${isHidden ? 'opacity-50 grayscale' : ''}`}
                 onClick={() => canEdit && !isEditing && setIsEditing(true)}
                 onContextMenu={handleContextMenu}
             >
@@ -202,6 +213,15 @@ const DashboardTitle = ({
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                     onClick={(e) => e.stopPropagation()}
                 >
+                    <div 
+                        className="px-4 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700"
+                        onClick={() => { onToggleHidden && onToggleHidden(); setContextMenu(null); }}
+                    >
+                        {isHidden ? <Eye size={16} /> : <EyeOff size={16} />}
+                        {isHidden ? '显示标题' : '隐藏标题'}
+                    </div>
+                    <div className="my-1 border-t border-gray-200 dark:border-slate-700"></div>
+
                     <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">标题样式</div>
                     {Object.values(TITLE_STYLES).map(s => (
                         <div 
@@ -214,6 +234,20 @@ const DashboardTitle = ({
                         </div>
                     ))}
                     
+                    <div className="my-1 border-t border-gray-200 dark:border-slate-700"></div>
+                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">字体大小</div>
+                    <div className="px-2 py-1 flex justify-between gap-1">
+                        {Object.values(TITLE_SIZES).map(s => (
+                            <div 
+                                key={s.id}
+                                className={`flex-1 px-1 py-1 text-xs text-center rounded cursor-pointer ${size === s.id ? 'bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 font-bold' : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`}
+                                onClick={() => { onSizeChange && onSizeChange(s.id); setContextMenu(null); }}
+                            >
+                                {s.label}
+                            </div>
+                        ))}
+                    </div>
+
                     <div className="my-1 border-t border-gray-200 dark:border-slate-700"></div>
                     <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">主题色</div>
                     <div className="px-3 py-1 grid grid-cols-6 gap-1 mb-1">
@@ -232,7 +266,7 @@ const DashboardTitle = ({
     );
 };
 
-export default function DashboardView({ files, currentPath, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick, columnCount = 4, dashboardTitle, onDashboardTitleChange, isRoot, dashboardTitleStyle, dashboardTitleColor, onDashboardTitleStyleChange, onDashboardTitleColorChange }) {
+export default function DashboardView({ files, currentPath, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick, columnCount = 4, dashboardTitle, onDashboardTitleChange, isRoot, dashboardTitleStyle, dashboardTitleColor, dashboardTitleSize, onDashboardTitleStyleChange, onDashboardTitleColorChange, onDashboardTitleSizeChange, dashboardTitleHidden, onDashboardTitleHiddenChange, showHidden }) {
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
 
@@ -279,164 +313,213 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
 
     return (
         <div className="flex flex-col h-full p-6 overflow-hidden">
-            {/* Dashboard Title - Only on Root */}
-            {isRoot && (
-                <DashboardTitle 
-                    title={dashboardTitle || '本地资源管理目录'} 
-                    onTitleChange={onDashboardTitleChange}
-                    style={dashboardTitleStyle}
-                    color={dashboardTitleColor}
-                    onStyleChange={onDashboardTitleStyleChange}
-                    onColorChange={onDashboardTitleColorChange}
-                />
-            )}
-
             {/* Columns Container - Vertical Scroll */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar pb-4">
-                <div 
-                    className="grid gap-6 w-full"
-                    style={{
-                        gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
-                    }}
-                >
-                    {allColumns.map((folder, index) => {
-                        let color = COLUMN_COLORS[index % COLUMN_COLORS.length];
-                        const effective = folder.isVirtual 
-                            ? getEffectiveColorScheme(currentPath, folderColors)
-                            : getEffectiveColorScheme(folder.path, folderColors);
-                        
-                        if (effective) color = effective;
-                        
-                        // For virtual folder, we check if it is hidden (conceptually)
-                        const hidden = isHidden ? isHidden(folder.path) : false;
-                        
-                        const children = folder.children || [];
-                        const isFolderRenaming = renamingName === folder.name;
-                        const isFolderSelected = selectedPaths && selectedPaths.has(folder.path);
+            <div className="flex-1 overflow-y-auto custom-scrollbar pb-4 flex flex-col">
+                {/* Dashboard Title - Only on Root */}
+                {isRoot && (!dashboardTitleHidden || showHidden) && (
+                    <DashboardTitle 
+                        title={dashboardTitle || '本地资源管理目录'} 
+                        onTitleChange={onDashboardTitleChange}
+                        style={dashboardTitleStyle}
+                        color={dashboardTitleColor}
+                        size={dashboardTitleSize}
+                        onStyleChange={onDashboardTitleStyleChange}
+                        onColorChange={onDashboardTitleColorChange}
+                        onSizeChange={onDashboardTitleSizeChange}
+                        isHidden={dashboardTitleHidden}
+                        onToggleHidden={() => onDashboardTitleHiddenChange && onDashboardTitleHiddenChange(!dashboardTitleHidden)}
+                    />
+                )}
 
-                        return (
-                            <div 
-                                key={folder.path || index}
-                                className={`
-                                    w-full flex flex-col transition-all h-[600px] border shadow-sm backdrop-blur-md
-                                    ${color.bg} ${color.border}
-                                    ${hidden ? 'opacity-60 grayscale' : ''}
-                                `}
-                                style={{
-                                    borderRadius: 'var(--radius-card)',
-                                    backdropFilter: 'blur(var(--glass-blur))',
-                                    borderWidth: 'var(--border-width)',
-                                    borderColor: `rgba(var(--border-color-rgb), var(--border-opacity))`
-                                }}
-                            >
-                                {/* Column Header */}
+                {allColumns.length > 0 ? (
+                    <div 
+                        className="grid gap-6 w-full"
+                        style={{
+                            gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+                        }}
+                        onContextMenu={(e) => {
+                            if (!onContextMenu) return;
+                            if (e.defaultPrevented) {
+                                e.stopPropagation();
+                                return;
+                            }
+
+                            const container = e.currentTarget;
+                            const columnEls = Array.from(container.querySelectorAll('[data-dashboard-column="true"]'));
+                            if (columnEls.length === 0) return;
+
+                            const x = e.clientX;
+                            const y = e.clientY;
+                            let bestEl = null;
+                            let bestDist = Number.POSITIVE_INFINITY;
+
+                            for (const el of columnEls) {
+                                const r = el.getBoundingClientRect();
+                                const dx = x < r.left ? (r.left - x) : (x > r.right ? (x - r.right) : 0);
+                                const dy = y < r.top ? (r.top - y) : (y > r.bottom ? (y - r.bottom) : 0);
+                                const dist = dx * dx + dy * dy;
+                                if (dist < bestDist) {
+                                    bestDist = dist;
+                                    bestEl = el;
+                                }
+                            }
+
+                            const folderPath = bestEl?.dataset?.folderPath;
+                            const folder = allColumns.find(f => (f.path || '') === (folderPath || ''));
+                            if (!folder) return;
+
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onContextMenu(e, folder);
+                        }}
+                    >
+                        {allColumns.map((folder, index) => {
+                            let color = COLUMN_COLORS[index % COLUMN_COLORS.length];
+                            const effective = folder.isVirtual 
+                                ? getEffectiveColorScheme(currentPath, folderColors)
+                                : getEffectiveColorScheme(folder.path, folderColors);
+                            
+                            if (effective) color = effective;
+                            
+                            // For virtual folder, we check if it is hidden (conceptually)
+                            const hidden = isHidden ? isHidden(folder.path) : false;
+                            
+                            const children = folder.children || [];
+                            const isFolderRenaming = renamingName === folder.name;
+                            const isFolderSelected = selectedPaths && selectedPaths.has(folder.path);
+
+                            return (
                                 <div 
-                                    className={`p-4 border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group ${isFolderSelected ? 'ring-2 ring-primary-500 z-10' : ''}`}
-                                    style={{ 
-                                        borderTopLeftRadius: 'var(--radius-card)', 
-                                        borderTopRightRadius: 'var(--radius-card)' 
+                                    key={folder.path || index}
+                                    data-dashboard-column="true"
+                                    data-folder-path={folder.path || ''}
+                                    className={`
+                                        w-full flex flex-col transition-all h-[600px] border shadow-sm backdrop-blur-md
+                                        ${color.bg} ${color.border}
+                                        ${hidden ? 'opacity-60 grayscale' : ''}
+                                    `}
+                                    style={{
+                                        borderRadius: 'var(--radius-card)',
+                                        backdropFilter: 'blur(var(--glass-blur))',
+                                        borderWidth: 'var(--border-width)',
+                                        borderColor: `rgba(var(--border-color-rgb), var(--border-opacity))`
                                     }}
-                                    onClick={(e) => !isFolderRenaming && onFileClick && onFileClick(e, folder)}
-                                    onDoubleClick={(e) => !isFolderRenaming && onFileDoubleClick && onFileDoubleClick(e, folder)}
-                                    onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); if(onContextMenu) onContextMenu(e, folder); }}
-                                >
-                                    {isFolderRenaming ? (
-                                        <RenameInput file={folder} className="flex-1 w-full text-lg font-bold" />
-                                    ) : (
-                                        <h3 className={`text-lg font-bold ${color.text} truncate flex-1 flex items-center`}>
-                                            {folder.name}
-                                            {hidden && <EyeOff size={16} className="ml-2 opacity-50"/>}
-                                        </h3>
-                                    )}
-                                    {!isFolderRenaming && !folder.isVirtual && (
-                                        <ChevronRight size={20} className={`${color.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
-                                    )}
-                                </div>
-
-                                {/* Column Content (List) */}
-                                <div 
-                                    className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2"
                                     onContextMenu={(e) => { 
                                         e.preventDefault(); 
                                         e.stopPropagation(); 
                                         if(onContextMenu) onContextMenu(e, folder); 
                                     }}
                                 >
-                                    {children.length > 0 ? (
-                                        children.map((child, childIndex) => {
-                                            const childHidden = isHidden ? isHidden(child.path) : false;
-                                            const isChildRenaming = renamingName === child.name;
-                                            const isSelected = selectedPaths && selectedPaths.has(child.path);
+                                    {/* Column Header */}
+                                    <div 
+                                        className={`p-4 border-b ${color.border} ${color.header} flex items-center justify-between cursor-pointer group ${isFolderSelected ? 'ring-2 ring-primary-500 z-10' : ''}`}
+                                        style={{ 
+                                            borderTopLeftRadius: 'var(--radius-card)', 
+                                            borderTopRightRadius: 'var(--radius-card)' 
+                                        }}
+                                        onClick={(e) => !isFolderRenaming && onFileClick && onFileClick(e, folder)}
+                                        onDoubleClick={(e) => !isFolderRenaming && onFileDoubleClick && onFileDoubleClick(e, folder)}
+                                    >
+                                        {isFolderRenaming ? (
+                                            <RenameInput file={folder} className="flex-1 w-full text-lg font-bold" />
+                                        ) : (
+                                            <h3 className={`text-lg font-bold ${color.text} truncate flex-1 flex items-center`}>
+                                                {folder.name}
+                                                {hidden && <EyeOff size={16} className="ml-2 opacity-50"/>}
+                                            </h3>
+                                        )}
+                                        {!isFolderRenaming && !folder.isVirtual && (
+                                            <ChevronRight size={20} className={`${color.text} opacity-0 group-hover:opacity-100 transition-opacity`} />
+                                        )}
+                                    </div>
 
-                                            return (
-                                                <div
-                                                    key={childIndex}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (!isChildRenaming && onFileClick) onFileClick(e, child);
-                                                    }}
-                                                    onDoubleClick={(e) => {
-                                                        e.stopPropagation();
-                                                        if (!isChildRenaming && onFileDoubleClick) onFileDoubleClick(e, child);
-                                                    }}
-                                                    onContextMenu={(e) => {
-                                                        e.preventDefault();
-                                                        e.stopPropagation();
-                                                        if(onContextMenu) onContextMenu(e, child);
-                                                    }}
-                                                    className={`
-                                                        flex items-center p-3 rounded-xl cursor-pointer transition-all border
-                                                        ${childHidden ? 'opacity-50 grayscale border-dashed border-gray-400' : ''}
-                                                        ${!isSelected && !childHidden ? 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:-translate-y-0.5' : ''}
-                                                        ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700' : ''}
-                                                        ${isChildRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
-                                                    `}
-                                                >
-                                                    <div className="mr-3 text-gray-500 dark:text-slate-400">
-                                                        {getFileIcon(child.name, child.isDirectory)}
+                                    {/* Column Content (List) */}
+                                    <div 
+                                        className="flex-1 overflow-y-auto p-3 custom-scrollbar space-y-2"
+                                        onContextMenu={(e) => { 
+                                            e.preventDefault(); 
+                                            e.stopPropagation(); 
+                                            if(onContextMenu) onContextMenu(e, folder); 
+                                        }}
+                                    >
+                                        {children.length > 0 ? (
+                                            children.map((child, childIndex) => {
+                                                const childHidden = isHidden ? isHidden(child.path) : false;
+                                                const isChildRenaming = renamingName === child.name;
+                                                const isSelected = selectedPaths && selectedPaths.has(child.path);
+
+                                                return (
+                                                    <div
+                                                        key={childIndex}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (!isChildRenaming && onFileClick) onFileClick(e, child);
+                                                        }}
+                                                        onDoubleClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (!isChildRenaming && onFileDoubleClick) onFileDoubleClick(e, child);
+                                                        }}
+                                                        onContextMenu={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            if(onContextMenu) onContextMenu(e, child);
+                                                        }}
+                                                        className={`
+                                                            flex items-center p-3 rounded-xl cursor-pointer transition-all border
+                                                            ${childHidden ? 'opacity-50 grayscale border-dashed border-gray-400' : ''}
+                                                            ${!isSelected && !childHidden ? 'bg-white/60 dark:bg-slate-800/60 border-transparent hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm hover:-translate-y-0.5' : ''}
+                                                            ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700' : ''}
+                                                            ${isChildRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
+                                                        `}
+                                                    >
+                                                        <div className="mr-3 text-gray-500 dark:text-slate-400">
+                                                            {getFileIcon(child.name, child.isDirectory)}
+                                                        </div>
+                                                        {isChildRenaming ? (
+                                                            <RenameInput file={child} className="flex-1 w-full min-w-0" />
+                                                        ) : (
+                                                            <span className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate flex-1">
+                                                                {child.name}
+                                                            </span>
+                                                        )}
+                                                        {child.isDirectory && !isChildRenaming && (
+                                                            <ChevronRight size={14} className="text-gray-400" />
+                                                        )}
                                                     </div>
-                                                    {isChildRenaming ? (
-                                                        <RenameInput file={child} className="flex-1 w-full min-w-0" />
-                                                    ) : (
-                                                        <span className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate flex-1">
-                                                            {child.name}
-                                                        </span>
-                                                    )}
-                                                    {child.isDirectory && !isChildRenaming && (
-                                                        <ChevronRight size={14} className="text-gray-400" />
-                                                    )}
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="text-center py-8 text-gray-400 dark:text-slate-500 text-sm italic">
-                                            (空)
-                                        </div>
-                                    )}
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="text-center py-8 text-gray-400 dark:text-slate-500 text-sm italic">
+                                                (空)
+                                            </div>
+                                        )}
+                                    </div>
+                                    
+                                    {/* Column Footer */}
+                                    <div 
+                                        className={`p-2 border-t ${color.border} bg-white/10 text-center`}
+                                        style={{ 
+                                            borderBottomLeftRadius: 'var(--radius-card)', 
+                                            borderBottomRightRadius: 'var(--radius-card)' 
+                                        }}
+                                    >
+                                        <span className={`text-xs font-medium ${color.text} opacity-60`}>
+                                            {children.length} 项
+                                        </span>
+                                    </div>
                                 </div>
-                                
-                                {/* Column Footer */}
-                                <div 
-                                    className={`p-2 border-t ${color.border} bg-white/10 text-center`}
-                                    style={{ 
-                                        borderBottomLeftRadius: 'var(--radius-card)', 
-                                        borderBottomRightRadius: 'var(--radius-card)' 
-                                    }}
-                                >
-                                    <span className={`text-xs font-medium ${color.text} opacity-60`}>
-                                        {children.length} 项
-                                    </span>
-                                </div>
-                            </div>
-                        );
-                    })}
-
-                    {allColumns.length === 0 && (
-                        <div className="flex flex-col items-center justify-center w-full h-64 text-gray-500">
-                            <span className="text-lg">暂无内容</span>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 min-h-[400px]">
+                        <div className="p-8 rounded-full bg-gray-50 dark:bg-slate-800/50 mb-4">
+                            <Folder size={64} className="text-gray-300 dark:text-slate-600" />
                         </div>
-                    )}
-                </div>
+                        <span className="text-xl font-medium">暂无内容</span>
+                        <span className="text-sm mt-2 opacity-60">此文件夹为空，右键点击可新建内容</span>
+                    </div>
+                )}
             </div>
         </div>
     );

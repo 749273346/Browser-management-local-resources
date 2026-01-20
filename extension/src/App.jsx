@@ -96,6 +96,8 @@ function App() {
               dashboardTitle: localStorage.getItem('dashboardTitle'),
               dashboardTitleStyle: localStorage.getItem('dashboardTitleStyle'),
               dashboardTitleColor: localStorage.getItem('dashboardTitleColor'),
+              dashboardTitleSize: localStorage.getItem('dashboardTitleSize'),
+              dashboardTitleHidden: localStorage.getItem('dashboardTitleHidden'),
               ...overrides
           };
           await fetch(`${SERVER_URL}/api/settings`, {
@@ -199,6 +201,16 @@ function App() {
                       changed = true;
                   }
 
+                  if (settings.dashboardTitleSize && settings.dashboardTitleSize !== localStorage.getItem('dashboardTitleSize')) {
+                      localStorage.setItem('dashboardTitleSize', settings.dashboardTitleSize);
+                      changed = true;
+                  }
+
+                  if (settings.dashboardTitleHidden && settings.dashboardTitleHidden !== localStorage.getItem('dashboardTitleHidden')) {
+                      localStorage.setItem('dashboardTitleHidden', settings.dashboardTitleHidden);
+                      changed = true;
+                  }
+
                   const serverFolderViewModes = sanitizeFolderViewModes(settings.folderViewModes || {});
                   const serverFolderViewModesJson = JSON.stringify(serverFolderViewModes);
                   if (serverFolderViewModesJson !== localStorage.getItem('folderViewModes')) {
@@ -211,8 +223,10 @@ function App() {
                       setFolderViewModes(serverFolderViewModes);
                       setDashboardColumnCounts(serverDashboardColumnCounts);
                       setDashboardTitle(localStorage.getItem('dashboardTitle') || '本地资源管理目录');
-                      setDashboardTitleStyle(localStorage.getItem('dashboardTitleStyle') || 'classic');
+                      setDashboardTitleStyle(localStorage.getItem('dashboardTitleStyle') || 'minimal');
                       setDashboardTitleColor(localStorage.getItem('dashboardTitleColor') || 'blue');
+                      setDashboardTitleSize(localStorage.getItem('dashboardTitleSize') || 'text-2xl');
+                      setDashboardTitleHidden(localStorage.getItem('dashboardTitleHidden') === 'true');
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
@@ -408,7 +422,7 @@ function App() {
   };
 
   const [dashboardTitleStyle, setDashboardTitleStyle] = useState(() => {
-      return localStorage.getItem('dashboardTitleStyle') || 'classic';
+      return localStorage.getItem('dashboardTitleStyle') || 'minimal';
   });
 
   const handleDashboardTitleStyleChange = (style) => {
@@ -425,6 +439,27 @@ function App() {
       setDashboardTitleColor(color);
       localStorage.setItem('dashboardTitleColor', color);
       updateServerSettings({ dashboardTitleColor: color }).catch(() => {});
+  };
+
+  const [dashboardTitleSize, setDashboardTitleSize] = useState(() => {
+      return localStorage.getItem('dashboardTitleSize') || 'text-2xl';
+  });
+
+  const handleDashboardTitleSizeChange = (size) => {
+      setDashboardTitleSize(size);
+      localStorage.setItem('dashboardTitleSize', size);
+      updateServerSettings({ dashboardTitleSize: size }).catch(() => {});
+  };
+
+  const [dashboardTitleHidden, setDashboardTitleHidden] = useState(() => {
+      return localStorage.getItem('dashboardTitleHidden') === 'true';
+  });
+
+  const handleDashboardTitleHiddenChange = (hidden) => {
+      const val = String(hidden);
+      setDashboardTitleHidden(hidden);
+      localStorage.setItem('dashboardTitleHidden', val);
+      updateServerSettings({ dashboardTitleHidden: val }).catch(() => {});
   };
 
   useEffect(() => {
@@ -950,7 +985,10 @@ function App() {
   return (
     <div 
         className="flex flex-col h-screen bg-transparent text-gray-800 font-sans selection:bg-primary-100 selection:text-primary-700"
-        onContextMenu={(e) => handleContextMenu(e, null)}
+        onContextMenu={(e) => {
+            if (e.defaultPrevented) return;
+            handleContextMenu(e, null);
+        }}
         onClick={handleBackgroundClick}
     >
       <TopBar 
@@ -1006,6 +1044,11 @@ function App() {
                     dashboardTitleColor={dashboardTitleColor}
                     onDashboardTitleStyleChange={handleDashboardTitleStyleChange}
                     onDashboardTitleColorChange={handleDashboardTitleColorChange}
+                    dashboardTitleSize={dashboardTitleSize}
+                    onDashboardTitleSizeChange={handleDashboardTitleSizeChange}
+                    dashboardTitleHidden={dashboardTitleHidden}
+                    onDashboardTitleHiddenChange={handleDashboardTitleHiddenChange}
+                    showHidden={showHidden}
                 />
             ) : currentViewMode === 'grid' ? (
                 <FileGrid 
@@ -1059,7 +1102,7 @@ function App() {
         fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
         onClose={() => setContextMenu({ x: null, y: null, file: null, selectedCount: 0 })}
-        isLevel1={isRoot && !!contextMenu.file?.isDirectory && isTopLevelFolderPath(contextMenu.file.path)}
+        isLevel1={(!!contextMenu.file && ((isRoot && isTopLevelFolderPath(contextMenu.file.path)) || currentViewMode === 'dashboard'))}
         hasClipboard={clipboard.length > 0}
         selectedCount={contextMenu.selectedCount || 0}
       />
