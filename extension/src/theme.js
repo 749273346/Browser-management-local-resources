@@ -68,7 +68,8 @@ export const applyColorMode = (mode) => {
 };
 
 export const applyTheme = (themeId) => {
-  const theme = themes[themeId] || themes['glass-morphism'];
+  const resolvedId = themes[themeId] ? themeId : 'glass-morphism';
+  const theme = themes[resolvedId];
   const root = document.documentElement;
   
   // Apply CSS Variables
@@ -77,6 +78,6 @@ export const applyTheme = (themeId) => {
   });
   
   // Save preference
-  localStorage.setItem('appTheme', themeId);
-  return theme;
+  localStorage.setItem('appTheme', resolvedId);
+  return { id: resolvedId, ...theme };
 };

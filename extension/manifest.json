@@ -3,7 +3,7 @@
   "name": "Local Resource Manager",
   "version": "1.0.3",
   "description": "Browser extension to manage local resources via local server",
-  "permissions": [],
+  "permissions": ["tabs"],
   "host_permissions": [
     "http://localhost:3001/*"
   ],

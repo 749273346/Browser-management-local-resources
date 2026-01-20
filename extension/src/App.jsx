@@ -139,38 +139,40 @@ function App() {
                       if (settings.rootPath) {
                           updateServerSettings({ rootPath: '' }).catch(() => {});
                       }
-                  } else if (settings.rootPath && settings.rootPath !== localRootPath) {
-                      localStorage.setItem('rootPath', settings.rootPath);
-                      setPath(settings.rootPath);
+                  } else if (Object.prototype.hasOwnProperty.call(settings, 'rootPath')) {
+                      const serverRoot = settings.rootPath || '';
+                      if (serverRoot !== (localRootPath || '')) {
+                          localStorage.setItem('rootPath', serverRoot);
+                          setPath(serverRoot);
+                          changed = true;
+                      }
+                  }
+                  
+                  if (Object.prototype.hasOwnProperty.call(settings, 'appTheme')) {
+                      const serverTheme = String(settings.appTheme || '');
+                      const applied = applyTheme(serverTheme || localStorage.getItem('appTheme') || 'glass-morphism');
+                      if (serverTheme && applied?.id && applied.id !== serverTheme) {
+                          updateServerSettings({ appTheme: applied.id }).catch(() => {});
+                      }
                       changed = true;
                   }
                   
-                  const localAppTheme = localStorage.getItem('appTheme');
-                  if (!localAppTheme && settings.appTheme) {
-                      localStorage.setItem('appTheme', settings.appTheme);
-                      applyTheme(settings.appTheme);
+                  if (Object.prototype.hasOwnProperty.call(settings, 'colorMode')) {
+                      const serverMode = String(settings.colorMode || 'day');
+                      const resolved = applyColorMode(serverMode);
+                      if (serverMode && resolved !== serverMode) {
+                          updateServerSettings({ colorMode: resolved }).catch(() => {});
+                      }
                       changed = true;
-                  } else if (localAppTheme && settings.appTheme !== localAppTheme) {
-                      updateServerSettings({ appTheme: localAppTheme }).catch(() => {});
-                  }
-                  
-                  const localColorMode = localStorage.getItem('colorMode');
-                  if (!localColorMode && settings.colorMode) {
-                      localStorage.setItem('colorMode', settings.colorMode);
-                      applyColorMode(settings.colorMode);
-                      changed = true;
-                  } else if (localColorMode && settings.colorMode !== localColorMode) {
-                      updateServerSettings({ colorMode: localColorMode }).catch(() => {});
                   }
                   
                   const keys = ['folderColors', 'bgImage', 'glassOpacity', 'glassBlur'];
-                  keys.forEach(key => {
-                      if (settings[key]) {
-                          const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key]) : settings[key];
-                          if (val != localStorage.getItem(key)) {
-                              localStorage.setItem(key, val);
-                              changed = true;
-                          }
+                  keys.forEach((key) => {
+                      if (!Object.prototype.hasOwnProperty.call(settings, key)) return;
+                      const val = typeof settings[key] === 'object' ? JSON.stringify(settings[key] || {}) : String(settings[key] ?? '');
+                      if (val !== (localStorage.getItem(key) ?? '')) {
+                          localStorage.setItem(key, val);
+                          changed = true;
                       }
                   });
 
@@ -192,34 +194,44 @@ function App() {
                       changed = true;
                   }
 
-                  if (settings.dashboardTitle && settings.dashboardTitle !== localStorage.getItem('dashboardTitle')) {
-                      localStorage.setItem('dashboardTitle', settings.dashboardTitle);
-                      changed = true;
-                  } else if (!settings.dashboardTitle) {
-                      const localTitle = localStorage.getItem('dashboardTitle');
-                      if (localTitle && localTitle !== '本地资源管理目录') {
-                          updateServerSettings({ dashboardTitle: localTitle }).catch(() => {});
+                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitle')) {
+                      const title = String(settings.dashboardTitle ?? '');
+                      if (title !== (localStorage.getItem('dashboardTitle') || '')) {
+                          localStorage.setItem('dashboardTitle', title);
+                          changed = true;
                       }
                   }
 
-                  if (settings.dashboardTitleStyle && settings.dashboardTitleStyle !== localStorage.getItem('dashboardTitleStyle')) {
-                      localStorage.setItem('dashboardTitleStyle', settings.dashboardTitleStyle);
-                      changed = true;
+                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleStyle')) {
+                      const style = String(settings.dashboardTitleStyle ?? '');
+                      if (style !== (localStorage.getItem('dashboardTitleStyle') || '')) {
+                          localStorage.setItem('dashboardTitleStyle', style);
+                          changed = true;
+                      }
                   }
                   
-                  if (settings.dashboardTitleColor && settings.dashboardTitleColor !== localStorage.getItem('dashboardTitleColor')) {
-                      localStorage.setItem('dashboardTitleColor', settings.dashboardTitleColor);
-                      changed = true;
+                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleColor')) {
+                      const color = String(settings.dashboardTitleColor ?? '');
+                      if (color !== (localStorage.getItem('dashboardTitleColor') || '')) {
+                          localStorage.setItem('dashboardTitleColor', color);
+                          changed = true;
+                      }
                   }
 
-                  if (settings.dashboardTitleSize && settings.dashboardTitleSize !== localStorage.getItem('dashboardTitleSize')) {
-                      localStorage.setItem('dashboardTitleSize', settings.dashboardTitleSize);
-                      changed = true;
+                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleSize')) {
+                      const size = String(settings.dashboardTitleSize ?? '');
+                      if (size !== (localStorage.getItem('dashboardTitleSize') || '')) {
+                          localStorage.setItem('dashboardTitleSize', size);
+                          changed = true;
+                      }
                   }
 
-                  if (settings.dashboardTitleHidden && settings.dashboardTitleHidden !== localStorage.getItem('dashboardTitleHidden')) {
-                      localStorage.setItem('dashboardTitleHidden', settings.dashboardTitleHidden);
-                      changed = true;
+                  if (Object.prototype.hasOwnProperty.call(settings, 'dashboardTitleHidden')) {
+                      const hidden = String(settings.dashboardTitleHidden ?? '');
+                      if (hidden !== (localStorage.getItem('dashboardTitleHidden') || '')) {
+                          localStorage.setItem('dashboardTitleHidden', hidden);
+                          changed = true;
+                      }
                   }
 
                   const serverFolderViewModes = sanitizeFolderViewModes(settings.folderViewModes || {});
@@ -242,9 +254,18 @@ function App() {
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
-                      if (settings.bgImage) root.style.setProperty('--bg-image', `url("${settings.bgImage}")`);
-                      if (settings.glassOpacity) root.style.setProperty('--glass-opacity', settings.glassOpacity);
-                      if (settings.glassBlur) root.style.setProperty('--glass-blur', `${settings.glassBlur}px`);
+                      if (Object.prototype.hasOwnProperty.call(settings, 'bgImage')) {
+                          const bg = String(settings.bgImage ?? '');
+                          root.style.setProperty('--bg-image', bg ? `url("${bg}")` : 'none');
+                      }
+                      if (Object.prototype.hasOwnProperty.call(settings, 'glassOpacity')) {
+                          const opacity = String(settings.glassOpacity ?? '');
+                          if (opacity) root.style.setProperty('--glass-opacity', opacity);
+                      }
+                      if (Object.prototype.hasOwnProperty.call(settings, 'glassBlur')) {
+                          const blur = String(settings.glassBlur ?? '');
+                          if (blur) root.style.setProperty('--glass-blur', `${blur}px`);
+                      }
                   }
               }
           } catch (e) {

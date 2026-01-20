@@ -18,6 +18,14 @@ export const COLUMN_COLORS = [
         name: '谷歌红' // Google Red
     },
     { 
+        id: 'orange', 
+        bg: 'bg-orange-100 dark:bg-orange-900/30', 
+        border: 'border-orange-300 dark:border-orange-700', 
+        header: 'bg-orange-200 dark:bg-orange-900/50', 
+        text: 'text-orange-800 dark:text-orange-100', 
+        name: '活力橙' // Orange
+    },
+    { 
         id: 'yellow', 
         bg: 'bg-yellow-100 dark:bg-yellow-900/30', 
         border: 'border-yellow-300 dark:border-yellow-700', 

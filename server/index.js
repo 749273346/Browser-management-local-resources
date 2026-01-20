@@ -7,7 +7,7 @@ const { exec, execFile } = require('child_process');
 const logger = require('./logger');
 
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT || 3001);
 
 app.use(cors());
 app.use(express.json());
@@ -81,6 +81,58 @@ app.get('/health', (req, res) => {
         timestamp: new Date().toISOString(),
         port: PORT
     });
+});
+
+const getRemovableDriveRoots = async () => {
+    if (process.platform !== 'win32') return [];
+
+    const psArgs = [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-Command',
+        'Get-CimInstance Win32_LogicalDisk -Filter "DriveType=2" | Select-Object -ExpandProperty DeviceID | ConvertTo-Json -Compress'
+    ];
+
+    const output = await new Promise((resolve) => {
+        execFile('powershell', psArgs, { windowsHide: true, maxBuffer: 1024 * 1024 }, (error, stdout) => {
+            if (error) return resolve('');
+            resolve(String(stdout || '').trim());
+        });
+    });
+
+    if (!output) return [];
+
+    let deviceIds;
+    try {
+        const parsed = JSON.parse(output);
+        deviceIds = Array.isArray(parsed) ? parsed : parsed ? [parsed] : [];
+    } catch {
+        deviceIds = output
+            .split(/\r?\n/g)
+            .map(s => s.trim())
+            .filter(Boolean);
+    }
+
+    const roots = deviceIds
+        .map(id => String(id || '').trim())
+        .filter(Boolean)
+        .map(id => (/^[a-zA-Z]:$/.test(id) ? `${id}\\` : id))
+        .map(id => (/^[a-zA-Z]:\\$/.test(id) ? id : id))
+        .filter(id => /^[a-zA-Z]:\\?$/.test(id))
+        .map(id => (id.endsWith('\\') ? id : `${id}\\`));
+
+    return Array.from(new Set(roots));
+};
+
+app.get('/api/removable-drives', async (req, res) => {
+    try {
+        const drives = await getRemovableDriveRoots();
+        res.json({ drives });
+    } catch (error) {
+        logger.error('Error getting removable drives:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Recursive function to get files
