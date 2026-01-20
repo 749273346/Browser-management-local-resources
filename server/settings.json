@@ -26,17 +26,15 @@
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "dashboard",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": "dashboard"
   },
-  "appTheme": "iron-spirit",
+  "appTheme": "classic-system",
   "colorMode": "day",
   "bgImage": "",
   "glassOpacity": "0.8",
   "glassBlur": "12",
-  "dashboardColumnCounts": {
-    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件": 3
-  },
+  "dashboardColumnCounts": {},
   "dashboardTitle": "惠来电力工区台账管理目录",
-  "dashboardTitleStyle": "glass",
-  "dashboardTitleColor": "green",
+  "dashboardTitleStyle": "minimal",
+  "dashboardTitleColor": "red",
   "dashboardTitleSize": "text-4xl",
   "dashboardTitleHidden": "false"
 }

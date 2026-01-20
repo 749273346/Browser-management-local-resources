@@ -122,6 +122,7 @@ const DashboardTitle = ({
                         }
                     }}
                     onClick={(e) => e.stopPropagation()}
+                    placeholder="由此键入标题"
                     className={`
                         bg-transparent ${size} font-bold text-center outline-none border-b-2 font-serif min-w-[320px] w-full
                         ${(isMinimal || isModern) ? 'text-gray-800 dark:text-white border-primary-500' : 'text-white border-white/50'}
@@ -129,13 +130,18 @@ const DashboardTitle = ({
                 />
             );
         }
+        
+        const displayTitle = title || '由此键入标题';
+        const isPlaceholder = !title;
+        
         return (
             <h1 className={`
                 ${size} font-bold tracking-wide font-serif select-none transition-all
                 ${(isMinimal || isModern) ? 'text-gray-800 dark:text-white' : 'text-white drop-shadow-lg'}
-                ${isModern ? `bg-gradient-to-r ${colorConfig.from} ${colorConfig.via} ${colorConfig.to} bg-clip-text text-transparent` : ''}
+                ${isModern && !isPlaceholder ? `bg-gradient-to-r ${colorConfig.from} ${colorConfig.via} ${colorConfig.to} bg-clip-text text-transparent` : ''}
+                ${isPlaceholder ? 'opacity-50 italic' : ''}
             `}>
-                {title}
+                {displayTitle}
             </h1>
         );
     };

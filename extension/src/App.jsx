@@ -222,11 +222,12 @@ function App() {
                       setFolderColors(sanitizeFolderColors(settings.folderColors));
                       setFolderViewModes(serverFolderViewModes);
                       setDashboardColumnCounts(serverDashboardColumnCounts);
-                      setDashboardTitle(localStorage.getItem('dashboardTitle') || '本地资源管理目录');
+                      setDashboardTitle(localStorage.getItem('dashboardTitle') || '');
                       setDashboardTitleStyle(localStorage.getItem('dashboardTitleStyle') || 'minimal');
                       setDashboardTitleColor(localStorage.getItem('dashboardTitleColor') || 'blue');
                       setDashboardTitleSize(localStorage.getItem('dashboardTitleSize') || 'text-2xl');
-                      setDashboardTitleHidden(localStorage.getItem('dashboardTitleHidden') === 'true');
+                      const hiddenVal = localStorage.getItem('dashboardTitleHidden');
+                      setDashboardTitleHidden(hiddenVal === null ? true : hiddenVal === 'true');
                       
                       // Update CSS variables for visual settings
                       const root = document.documentElement;
@@ -410,12 +411,11 @@ function App() {
   });
 
   const [dashboardTitle, setDashboardTitle] = useState(() => {
-      return localStorage.getItem('dashboardTitle') || '本地资源管理目录';
+      return localStorage.getItem('dashboardTitle') || '';
   });
 
   const handleDashboardTitleChange = (newTitle) => {
       const next = String(newTitle || '').trim();
-      if (!next) return;
       setDashboardTitle(next);
       localStorage.setItem('dashboardTitle', next);
       updateServerSettings({ dashboardTitle: next }).catch(() => {});
@@ -452,7 +452,8 @@ function App() {
   };
 
   const [dashboardTitleHidden, setDashboardTitleHidden] = useState(() => {
-      return localStorage.getItem('dashboardTitleHidden') === 'true';
+      const val = localStorage.getItem('dashboardTitleHidden');
+      return val === null ? true : val === 'true';
   });
 
   const handleDashboardTitleHiddenChange = (hidden) => {
