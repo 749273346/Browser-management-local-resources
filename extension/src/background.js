@@ -104,3 +104,14 @@ chrome.runtime.onStartup.addListener(() => {
 chrome.runtime.onInstalled.addListener(() => {
   openMainAndUsbTabs();
 });
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!message || typeof message !== 'object') return false
+  if (message.type !== 'open-main-and-usb-tabs') return false
+
+  openMainAndUsbTabs()
+    .then(() => sendResponse({ ok: true }))
+    .catch((error) => sendResponse({ ok: false, error: String(error && error.message ? error.message : error) }))
+
+  return true
+})

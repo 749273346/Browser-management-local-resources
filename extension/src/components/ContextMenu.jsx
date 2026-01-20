@@ -8,6 +8,10 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
   const isDir = !!file?.isDirectory || Array.isArray(file?.children);
 
   useEffect(() => {
+    menuRef.current?.focus();
+  }, [x, y]);
+
+  useEffect(() => {
     const handleClickOutside = (event) => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         onClose();
@@ -20,6 +24,30 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
   }, [onClose]);
 
   const handleKeyDown = (e) => {
+    const key = String(e.key || '').toLowerCase();
+    const isCopy = (e.ctrlKey || e.metaKey) && key === 'c';
+    const isPaste = (e.ctrlKey || e.metaKey) && key === 'v';
+
+    if (isCopy) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (file && !file.isVirtual) onAction('copy', file);
+      onClose();
+      return;
+    }
+
+    if (isPaste) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (file && isDir && !file.isVirtual) {
+        onAction('paste', file);
+      } else {
+        onAction('paste');
+      }
+      onClose();
+      return;
+    }
+
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
       const buttons = menuRef.current.querySelectorAll('button');
@@ -88,6 +116,9 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
           </div>
           {!isMulti && isDir && !file.isVirtual && (
              <MenuItem icon={FolderOpen} label="打开 (Open)" onClick={() => onAction('open', file)} />
+          )}
+          {!isMulti && isDir && (
+            <MenuItem icon={Clipboard} label="粘贴到此处 (Paste)" onClick={() => onAction('paste', file)} disabled={!hasClipboard || file.isVirtual} />
           )}
           <MenuItem icon={Copy} label={`复制 ${isMulti ? selectedCount + ' 项' : ''} (Copy)`} onClick={() => onAction('copy', file)} disabled={file.isVirtual} />
           <MenuItem 

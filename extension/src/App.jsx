@@ -18,7 +18,26 @@ const normalizePathKey = (p) => {
   return p.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase()
 }
 
-const getRootKey = () => normalizePathKey(localStorage.getItem('rootPath'))
+const getRootKey = (rootPath) => normalizePathKey(rootPath ?? localStorage.getItem('rootPath'))
+
+const getWindowsDriveRoot = (p) => {
+  const v = String(p || '').trim()
+  const match = v.match(/^([a-zA-Z]):[\\/]/)
+  if (!match) return ''
+  return `${match[1].toUpperCase()}:\\`
+}
+
+const CLIPBOARD_STORAGE_KEY = 'lrm_clipboard_items'
+
+const loadClipboardItems = () => {
+  try {
+    const raw = localStorage.getItem(CLIPBOARD_STORAGE_KEY)
+    const parsed = JSON.parse(raw || '[]')
+    return Array.isArray(parsed) ? parsed.filter(Boolean) : []
+  } catch {
+    return []
+  }
+}
 
 const getTopLevelFolderKey = (p, rootKey = getRootKey()) => {
   const np = normalizePathKey(p)
@@ -291,11 +310,20 @@ function App() {
     getClipboardFiles
   } = useFileSystem();
 
-  const [clipboard, setClipboard] = useState([]);
+  const [clipboard, setClipboard] = useState(() => loadClipboardItems());
   const [selectedPaths, setSelectedPaths] = useState(new Set());
   const [lastSelectedPath, setLastSelectedPath] = useState(null);
 
   const { toggleHidden, isHidden, showHidden, toggleShowHidden, addHiddenFiles, setShowHiddenState } = useHiddenFiles();
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (!e || e.key !== CLIPBOARD_STORAGE_KEY) return
+      setClipboard(loadClipboardItems())
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Filter files based on hidden status
   // For dashboard view (recursive), we need to filter children too, 
@@ -384,11 +412,12 @@ function App() {
   // Try to get path from URL params first (for multi-tab nav), then localStorage
   const getInitialPath = () => {
     const params = new URLSearchParams(window.location.search);
+    const source = params.get('source');
     const pathFromUrl = params.get('path');
     if (pathFromUrl) {
       // If opened with a specific path (e.g. from Dashboard), set it as root if missing
       // This ensures isRoot logic works correctly and skips WelcomeScreen
-      if (!localStorage.getItem('rootPath')) {
+      if (source !== 'usb' && !localStorage.getItem('rootPath')) {
         localStorage.setItem('rootPath', pathFromUrl);
       }
       return pathFromUrl;
@@ -593,8 +622,25 @@ function App() {
       if (glassOpacity) root.style.setProperty('--glass-opacity', glassOpacity);
       if (glassBlur) root.style.setProperty('--glass-blur', `${glassBlur}px`);
   }, []);
+
+  useEffect(() => {
+      try {
+          if (!chrome?.runtime?.sendMessage) return
+          chrome.runtime.sendMessage({ type: 'open-main-and-usb-tabs' }, () => {
+              const err = chrome.runtime.lastError
+              if (err) void err
+          })
+      } catch (e) {
+          void e
+      }
+  }, [])
   
-  const isRoot = normalizePathKey(path) === normalizePathKey(localStorage.getItem('rootPath'));
+  const pageParams = new URLSearchParams(window.location.search)
+  const isUsbTab = pageParams.get('source') === 'usb'
+  const usbRootPath = isUsbTab ? getWindowsDriveRoot(path) : ''
+  const effectiveRootPath = (isUsbTab && usbRootPath) ? usbRootPath : (localStorage.getItem('rootPath') || '')
+
+  const isRoot = normalizePathKey(path) === normalizePathKey(effectiveRootPath);
   const depth = isRoot ? 0 : 1;
 
   useEffect(() => {
@@ -708,9 +754,8 @@ function App() {
   };
   
   const handleReset = () => {
-      const rootPath = localStorage.getItem('rootPath');
-      if (rootPath) {
-          handlePathNavigate(rootPath);
+      if (effectiveRootPath) {
+          handlePathNavigate(effectiveRootPath);
       } else {
           if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.update) {
                chrome.tabs.update({ url: 'index.html' });
@@ -942,6 +987,7 @@ function App() {
           } else if (action === 'copy') {
               const itemsToCopy = targets.map(t => ({ path: t.path, name: t.name, isDirectory: t.isDirectory }));
               setClipboard(itemsToCopy);
+              localStorage.setItem(CLIPBOARD_STORAGE_KEY, JSON.stringify(itemsToCopy));
               
               // Sync to system clipboard
               try {
@@ -965,9 +1011,17 @@ function App() {
                   itemsToPaste = clipboard;
               }
 
-              if (!itemsToPaste || itemsToPaste.length === 0) return;
+              if (!itemsToPaste || itemsToPaste.length === 0) {
+                  showToast('剪贴板为空', 'error');
+                  return;
+              }
+
+              let targetDir = path;
+              if (file && (file.isDirectory || Array.isArray(file.children)) && !file.isVirtual && file.path) {
+                  targetDir = file.path;
+              }
               
-              const separator = path.includes('/') ? '/' : '\\';
+              const separator = targetDir.includes('/') ? '/' : '\\';
               
               for (const item of itemsToPaste) {
                   const getParentDir = (p) => {
@@ -997,7 +1051,7 @@ function App() {
                   }
                   
                   const newName = getUniqueName(baseName, ext);
-                  const destinationPath = `${path}${separator}${newName}`;
+                  const destinationPath = `${targetDir}${separator}${newName}`;
                   
                   await copyItem(item.path, destinationPath);
               }
