@@ -50,6 +50,7 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
   const [glassBlur, setGlassBlur] = useState(localStorage.getItem('glassBlur') || 12);
   const [currentTheme, setCurrentTheme] = useState(localStorage.getItem('appTheme') || 'glass-morphism');
   const [colorMode, setColorMode] = useState(localStorage.getItem('colorMode') || 'day');
+  const [autoStart, setAutoStart] = useState(localStorage.getItem('autoStart') === 'true');
   const [customWallpapers, setCustomWallpapers] = useState(() => {
       try {
           return JSON.parse(localStorage.getItem('customWallpapers') || '[]');
@@ -76,6 +77,7 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
           setTempBgImage(normalizeBgValue(localStorage.getItem('bgImage') || ''));
           setCurrentRoot(localStorage.getItem('rootPath') || '');
           setColorMode(localStorage.getItem('colorMode') || 'day');
+          setAutoStart(localStorage.getItem('autoStart') === 'true');
           try {
               setCustomWallpapers(JSON.parse(localStorage.getItem('customWallpapers') || '[]'));
           } catch {
@@ -234,6 +236,7 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
           folderViewModes: JSON.parse(localStorage.getItem('folderViewModes') || '{}'),
           appTheme: localStorage.getItem('appTheme'),
           colorMode: localStorage.getItem('colorMode'),
+          autoStart: localStorage.getItem('autoStart') === 'true',
           bgImage: localStorage.getItem('bgImage'),
           glassOpacity: localStorage.getItem('glassOpacity'),
           glassBlur: localStorage.getItem('glassBlur'),
@@ -246,6 +249,22 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
           keepalive: !!fetchOptions?.keepalive,
           signal: fetchOptions?.signal
       });
+  };
+
+  const handleAutoStartToggle = async (next) => {
+      const previous = autoStart;
+      setAutoStart(next);
+      localStorage.setItem('autoStart', String(next));
+      try {
+          await saveSettingsToServer({ autoStart: next });
+          if (showToast) showToast(next ? '已开启开机自启，将在托盘静默运行。' : '已关闭开机自启。');
+      } catch (err) {
+          setAutoStart(previous);
+          localStorage.setItem('autoStart', String(previous));
+          const message = err?.message ? `设置失败：${err.message}` : '设置失败';
+          if (showToast) showToast(message, 'error');
+          else alert(message);
+      }
   };
 
   const handleChangeRoot = async () => {
@@ -590,6 +609,24 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
                             >
                                 退出资源库
                             </Button>
+                        </div>
+
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">托盘与启动</h3>
+                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-xl border border-gray-200 dark:border-slate-700">
+                                <label className="flex items-start justify-between gap-4">
+                                    <div className="space-y-1">
+                                        <div className="text-sm font-medium text-gray-900 dark:text-slate-100">开机自启（静默托盘运行）</div>
+                                        <div className="text-xs text-gray-500 dark:text-slate-400">开启后，系统启动时自动运行，不弹出窗口，可在托盘打开控制台。</div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={autoStart}
+                                        onChange={(e) => handleAutoStartToggle(e.target.checked)}
+                                        className="mt-1 h-5 w-5 accent-primary-600"
+                                    />
+                                </label>
+                            </div>
                         </div>
 
                         <div>

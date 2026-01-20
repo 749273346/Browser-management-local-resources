@@ -1,16 +1,29 @@
 {
+  "autoStart": false,
   "rootPath": "E:\\QC-攻关小组\\正在进行项目\\浏览器资源管理\\Browser-management-local-resources\\测试资源库",
   "folderColors": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "blue",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理": "red",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "yellow",
-    "d:/工时统计": "blue",
-    "d:/设备故障统计": "red",
-    "d:/system volume information": "orange"
+    "e:/qc-攻关小组/成果安装包": "blue",
+    "e:/qc-攻关小组/基础性文件": "red",
+    "e:/qc-攻关小组/解决异常": "orange",
+    "e:/qc-攻关小组/数据库相关资料": "yellow",
+    "e:/qc-攻关小组/项目申报": "green",
+    "e:/qc-攻关小组/项目实例": "purple",
+    "e:/qc-攻关小组/学习资料": "gray",
+    "e:/qc-攻关小组/已完结项目": "blue",
+    "e:/qc-攻关小组/招募海报": "red",
+    "e:/qc-攻关小组/正在进行项目": "orange",
+    "e:/qc-攻关小组/政策性文件": "yellow",
+    "e:/qc-攻关小组/组织纲领": "green",
+    "e:/qc-攻关小组/trea-sets": "purple",
+    "e:/qc-攻关小组/ui-ux-pro-max-skill": "gray"
   },
   "folderViewModes": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "dashboard",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": "dashboard"
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": "dashboard",
+    "d:": "grid"
   },
   "appTheme": "classic-system",
   "colorMode": "day",

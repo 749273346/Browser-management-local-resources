@@ -102,12 +102,14 @@ function App() {
 
   const updateServerSettings = async (overrides = {}) => {
       try {
+          const autoStartRaw = localStorage.getItem('autoStart');
           const settings = {
               rootPath: localStorage.getItem('rootPath'),
               folderColors: JSON.parse(localStorage.getItem('folderColors') || '{}'),
               folderViewModes: sanitizeFolderViewModes(JSON.parse(localStorage.getItem('folderViewModes') || '{}')),
               appTheme: localStorage.getItem('appTheme'),
               colorMode: localStorage.getItem('colorMode'),
+              ...(autoStartRaw === null ? {} : { autoStart: autoStartRaw === 'true' }),
               bgImage: localStorage.getItem('bgImage'),
               glassOpacity: localStorage.getItem('glassOpacity'),
               glassBlur: localStorage.getItem('glassBlur'),
@@ -183,6 +185,14 @@ function App() {
                           updateServerSettings({ colorMode: resolved }).catch(() => {});
                       }
                       changed = true;
+                  }
+
+                  if (Object.prototype.hasOwnProperty.call(settings, 'autoStart')) {
+                      const serverAutoStart = String(!!settings.autoStart);
+                      if (serverAutoStart !== (localStorage.getItem('autoStart') || '')) {
+                          localStorage.setItem('autoStart', serverAutoStart);
+                          changed = true;
+                      }
                   }
                   
                   const keys = ['folderColors', 'bgImage', 'glassOpacity', 'glassBlur'];

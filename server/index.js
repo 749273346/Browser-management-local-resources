@@ -654,6 +654,35 @@ if ($files) {
 // Settings API
 const settingsPath = path.join(__dirname, 'settings.json');
 
+const toBoolean = (value) => {
+    if (value === true) return true;
+    if (value === false) return false;
+    if (value === 1 || value === '1') return true;
+    if (value === 0 || value === '0') return false;
+    if (typeof value === 'string') {
+        const v = value.trim().toLowerCase();
+        if (v === 'true') return true;
+        if (v === 'false') return false;
+    }
+    return undefined;
+};
+
+const applyAutoStartSetting = (enabled) => {
+    if (!isElectronRuntime()) return;
+    const val = toBoolean(enabled);
+    if (typeof val !== 'boolean') return;
+    try {
+        const electron = require('electron');
+        if (electron?.app?.setLoginItemSettings) {
+            electron.app.setLoginItemSettings({ openAtLogin: val });
+        }
+    } catch (e) {
+        try {
+            logger.warn('Failed to apply autoStart setting', e);
+        } catch {}
+    }
+};
+
 app.get('/api/settings', async (req, res) => {
     try {
         const data = await fs.readFile(settingsPath, 'utf8');
@@ -669,8 +698,19 @@ app.get('/api/settings', async (req, res) => {
 
 app.post('/api/settings', async (req, res) => {
     try {
-        const settings = req.body;
+        const incoming = req.body || {};
+        let existing = {};
+        try {
+            const raw = await fs.readFile(settingsPath, 'utf8');
+            existing = JSON.parse(raw || '{}') || {};
+        } catch (e) {
+            if (e?.code !== 'ENOENT') throw e;
+        }
+        const settings = { ...existing, ...incoming };
         await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), 'utf8');
+        if (Object.prototype.hasOwnProperty.call(incoming, 'autoStart')) {
+            applyAutoStartSetting(incoming.autoStart);
+        }
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });

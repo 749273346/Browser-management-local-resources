@@ -5,6 +5,7 @@ const logger = require('./logger');
 
 let mainWindow;
 let tray;
+const settingsPath = path.join(__dirname, 'settings.json');
 
 app.setAppUserModelId('com.qc.localresourcemanager');
 
@@ -142,7 +143,101 @@ function getIconPath() {
   return null;
 }
 
-function createTray() {
+function readSettingsSafe() {
+  try {
+    if (!fs.existsSync(settingsPath)) return {};
+    const raw = fs.readFileSync(settingsPath, 'utf8');
+    return JSON.parse(raw || '{}') || {};
+  } catch (e) {
+    try {
+      logger.warn('Failed to read settings', e);
+    } catch {}
+    return {};
+  }
+}
+
+function writeSettingsSafe(settings) {
+  try {
+    fs.writeFileSync(settingsPath, JSON.stringify(settings || {}, null, 2), 'utf8');
+    return true;
+  } catch (e) {
+    try {
+      logger.warn('Failed to write settings', e);
+    } catch {}
+    return false;
+  }
+}
+
+function getAutoStartEffective() {
+  try {
+    const state = app.getLoginItemSettings();
+    return !!state.openAtLogin;
+  } catch {
+    return false;
+  }
+}
+
+function setAutoStartEnabled(enabled) {
+  const nextEnabled = !!enabled;
+  let ok = true;
+  try {
+    app.setLoginItemSettings({ openAtLogin: nextEnabled });
+  } catch (e) {
+    ok = false;
+    try {
+      logger.warn('Failed to set login item settings', e);
+    } catch {}
+  }
+  const current = readSettingsSafe();
+  current.autoStart = nextEnabled;
+  writeSettingsSafe(current);
+  return ok;
+}
+
+function buildTrayMenu(autoStartEnabled) {
+  return Menu.buildFromTemplate([
+    { 
+      label: '打开控制台', 
+      click: () => {
+        showMainWindow();
+      } 
+    },
+    { type: 'separator' },
+    {
+      label: '开机自启（静默托盘运行）',
+      type: 'checkbox',
+      checked: !!autoStartEnabled,
+      click: (menuItem) => {
+        const desired = !!menuItem.checked;
+        const ok = setAutoStartEnabled(desired);
+        const effective = getAutoStartEffective();
+        try {
+          if (tray) tray.setContextMenu(buildTrayMenu(effective));
+        } catch {}
+        if (!ok) {
+          try {
+            logger.warn('AutoStart update failed', { desired, effective });
+          } catch {}
+        }
+      }
+    },
+    { type: 'separator' },
+    { 
+      label: '重启服务', 
+      click: () => {
+        requestRestart('tray');
+      } 
+    },
+    { 
+      label: '退出', 
+      click: () => {
+        requestExit(100);
+      } 
+    }
+  ]);
+}
+
+function createTray(autoStartEnabled) {
   const iconPath = getIconPath();
   let trayImage;
   
@@ -173,30 +268,7 @@ function createTray() {
 
   tray = new Tray(trayImage);
   tray.setToolTip('浏览器资源管理服务');
-  
-  const contextMenu = Menu.buildFromTemplate([
-    { 
-      label: '打开控制台', 
-      click: () => {
-        showMainWindow();
-      } 
-    },
-    { type: 'separator' },
-    { 
-      label: '重启服务', 
-      click: () => {
-        requestRestart('tray');
-      } 
-    },
-    { 
-      label: '退出', 
-      click: () => {
-        requestExit(100);
-      } 
-    }
-  ]);
-
-  tray.setContextMenu(contextMenu);
+  tray.setContextMenu(buildTrayMenu(autoStartEnabled));
 
   tray.on('double-click', () => {
     showMainWindow();
@@ -217,8 +289,19 @@ function startServer() {
 
 app.whenReady().then(() => {
   logger.info('App ready');
+  const settings = readSettingsSafe();
+  if (typeof settings.autoStart === 'boolean') {
+    try {
+      app.setLoginItemSettings({ openAtLogin: settings.autoStart });
+    } catch (e) {
+      try {
+        logger.warn('Failed to apply autoStart on boot', e);
+      } catch {}
+    }
+  }
+  const initialAutoStart = typeof settings.autoStart === 'boolean' ? settings.autoStart : getAutoStartEffective();
   startServer();
-  createTray();
+  createTray(initialAutoStart);
 
   app.on('activate', () => {
     return;
