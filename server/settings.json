@@ -1,5 +1,5 @@
 {
-  "rootPath": "E:\\QC-攻关小组\\正在进行项目\\自主超链接\\Autonomous-hyperlink\\测试文件",
+  "rootPath": "E:\\QC-攻关小组\\正在进行项目\\浏览器资源管理\\Browser-management-local-resources\\测试资源库",
   "folderColors": {
     "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/__pycache__": "red",
     "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/1-上级文": "green",
@@ -20,7 +20,10 @@
     "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/8-会议纪要": "purple",
     "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/9-停电计划": "gray",
     "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/dist": "blue",
-    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/build": "blue"
+    "e:/qc-攻关小组/正在进行项目/自主超链接/autonomous-hyperlink/测试文件/build": "blue",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "blue",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理": "red",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "yellow"
   },
   "folderViewModes": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "dashboard",
@@ -29,9 +32,11 @@
   "appTheme": "classic-system",
   "colorMode": "day",
   "bgImage": "",
-  "glassOpacity": "0.8",
-  "glassBlur": "12",
-  "dashboardColumnCounts": {},
+  "glassOpacity": "0.6",
+  "glassBlur": "15",
+  "dashboardColumnCounts": {
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": 3
+  },
   "dashboardTitle": "惠来电力工区台账管理目录",
   "dashboardTitleStyle": "minimal",
   "dashboardTitleColor": "red",

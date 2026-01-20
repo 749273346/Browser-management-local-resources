@@ -227,7 +227,7 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
       setWallpaperMenu({ x: e.clientX, y: e.clientY, url, isCustom, isPreset });
   };
 
-  const saveSettingsToServer = async (overrides = {}) => {
+  const saveSettingsToServer = async (overrides = {}, fetchOptions = {}) => {
       const settings = {
           rootPath: localStorage.getItem('rootPath'),
           folderColors: JSON.parse(localStorage.getItem('folderColors') || '{}'),
@@ -242,7 +242,9 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
       await fetch(`${SERVER_URL}/api/settings`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(settings)
+          body: JSON.stringify(settings),
+          keepalive: !!fetchOptions?.keepalive,
+          signal: fetchOptions?.signal
       });
   };
 
@@ -276,19 +278,35 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
       }
   };
 
-  const handleHistoryClick = (path) => {
+  const handleHistoryClick = async (path) => {
       if (path === currentRoot) return;
       if (confirm(`切换到历史目录: ${path}?`)) {
           localStorage.setItem('rootPath', path);
-          saveSettingsToServer({ rootPath: path }).catch(() => {});
+          localStorage.removeItem('rootPathClearedAt');
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 1200);
+          try {
+              await saveSettingsToServer({ rootPath: path }, { keepalive: true, signal: controller.signal });
+          } catch (e) {
+              void e;
+          }
+          clearTimeout(timer);
           window.location.href = 'index.html';
       }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
       if (confirm('确定要退出当前资源库并返回初始界面吗？')) {
           localStorage.removeItem('rootPath');
-          saveSettingsToServer({ rootPath: '' }).catch(() => {});
+          localStorage.setItem('rootPathClearedAt', String(Date.now()));
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 1200);
+          try {
+              await saveSettingsToServer({ rootPath: '' }, { keepalive: true, signal: controller.signal });
+          } catch (e) {
+              void e;
+          }
+          clearTimeout(timer);
           window.location.href = 'index.html';
       }
   };

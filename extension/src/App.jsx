@@ -127,8 +127,19 @@ function App() {
                   }
 
                   let changed = false;
-                  
-                  if (settings.rootPath && settings.rootPath !== localStorage.getItem('rootPath')) {
+
+                  const localRootPath = localStorage.getItem('rootPath');
+                  const clearedAtRaw = localStorage.getItem('rootPathClearedAt');
+                  const clearedAt = clearedAtRaw ? parseInt(clearedAtRaw, 10) : NaN;
+                  const shouldForceClearRootPath = Number.isFinite(clearedAt) && Date.now() - clearedAt < 10000;
+
+                  if (shouldForceClearRootPath) {
+                      localStorage.removeItem('rootPath');
+                      localStorage.removeItem('rootPathClearedAt');
+                      if (settings.rootPath) {
+                          updateServerSettings({ rootPath: '' }).catch(() => {});
+                      }
+                  } else if (settings.rootPath && settings.rootPath !== localRootPath) {
                       localStorage.setItem('rootPath', settings.rootPath);
                       setPath(settings.rootPath);
                       changed = true;
