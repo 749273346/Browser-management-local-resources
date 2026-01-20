@@ -354,7 +354,14 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
     );
 
     return (
-        <div className="flex flex-col h-full p-6 overflow-hidden">
+        <div 
+            className="flex flex-col h-full p-6 overflow-hidden"
+            onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if(onContextMenu) onContextMenu(e, null, 'content');
+            }}
+        >
             {/* Columns Container - Vertical Scroll */}
             <div className="flex-1 overflow-y-auto custom-scrollbar pb-4 flex flex-col">
                 {/* Dashboard Title - Only on Root */}
@@ -412,7 +419,7 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
 
                             e.preventDefault();
                             e.stopPropagation();
-                            onContextMenu(e, folder);
+                            onContextMenu(e, folder, 'content');
                         }}
                     >
                         {allColumns.map((folder, index) => {
@@ -446,11 +453,6 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                                         borderWidth: 'var(--border-width)',
                                         borderColor: `rgba(var(--border-color-rgb), var(--border-opacity))`
                                     }}
-                                    onContextMenu={(e) => { 
-                                        e.preventDefault(); 
-                                        e.stopPropagation(); 
-                                        if(onContextMenu) onContextMenu(e, folder); 
-                                    }}
                                 >
                                     {/* Column Header */}
                                     <div 
@@ -461,6 +463,11 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                                         }}
                                         onClick={(e) => !isFolderRenaming && onFileClick && onFileClick(e, folder)}
                                         onDoubleClick={(e) => !isFolderRenaming && onFileDoubleClick && onFileDoubleClick(e, folder)}
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if(onContextMenu) onContextMenu(e, folder, 'header');
+                                        }}
                                     >
                                         {isFolderRenaming ? (
                                             <RenameInput file={folder} className="flex-1 w-full text-lg font-bold" />
@@ -481,7 +488,7 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                                         onContextMenu={(e) => { 
                                             e.preventDefault(); 
                                             e.stopPropagation(); 
-                                            if(onContextMenu) onContextMenu(e, folder); 
+                                            if(onContextMenu) onContextMenu(e, folder, 'content'); 
                                         }}
                                     >
                                         {children.length > 0 ? (
@@ -531,7 +538,14 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                                                 );
                                             })
                                         ) : (
-                                            <div className="text-center py-8 text-gray-400 dark:text-slate-500 text-sm italic">
+                                            <div 
+                                                className="text-center py-8 text-gray-400 dark:text-slate-500 text-sm italic"
+                                                onContextMenu={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    if(onContextMenu) onContextMenu(e, folder, 'content');
+                                                }}
+                                            >
                                                 (空)
                                             </div>
                                         )}
@@ -543,6 +557,11 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                                         style={{ 
                                             borderBottomLeftRadius: 'var(--radius-card)', 
                                             borderBottomRightRadius: 'var(--radius-card)' 
+                                        }}
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if(onContextMenu) onContextMenu(e, folder, 'content');
                                         }}
                                     >
                                         <span className={`text-xs font-medium ${color.text} opacity-60`}>

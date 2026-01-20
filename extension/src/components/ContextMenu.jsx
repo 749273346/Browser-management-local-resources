@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { FolderPlus, FilePlus, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText, Copy, Clipboard } from 'lucide-react';
 import { COLUMN_COLORS } from '../constants/theme';
 
-export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard, selectedCount = 1 }) {
+export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard, selectedCount = 1, sourceType = null }) {
   const menuRef = useRef(null);
   const isMulti = selectedCount > 1;
   const isDir = !!file?.isDirectory || Array.isArray(file?.children);
@@ -31,7 +31,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
     if (isCopy) {
       e.preventDefault();
       e.stopPropagation();
-      if (file && !file.isVirtual) onAction('copy', file);
+      if (file && !file.isVirtual && sourceType !== 'content') onAction('copy', file);
       onClose();
       return;
     }
@@ -39,7 +39,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
     if (isPaste) {
       e.preventDefault();
       e.stopPropagation();
-      if (file && isDir && !file.isVirtual) {
+      if (file && (isDir || sourceType === 'content') && !file.isVirtual) {
         onAction('paste', file);
       } else {
         onAction('paste');
@@ -100,6 +100,8 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
   const Separator = () => <div className="h-px bg-gray-200 dark:bg-slate-700 my-1 mx-2"></div>;
   const MenuHeader = ({ title }) => <div className="px-3 py-1 text-xs font-semibold text-gray-400 dark:text-slate-400 uppercase tracking-wider">{title}</div>;
 
+  const showContentMenu = sourceType === 'content' && file;
+
   return (
     <div
       ref={menuRef}
@@ -108,7 +110,23 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >
-      {file ? (
+      {showContentMenu ? (
+         // Content Area Context Menu (New, Paste inside folder)
+         <>
+           <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider truncate">
+              {file.name}
+           </div>
+           <MenuItem icon={Clipboard} label="粘贴 (Paste)" onClick={() => onAction('paste', file)} disabled={!hasClipboard || file.isVirtual} />
+           <MenuItem icon={Copy} label="复制此文件夹 (Copy)" onClick={() => onAction('copy', file)} disabled={file.isVirtual} />
+           <Separator />
+           <MenuHeader title="新建 (New)" />
+           <MenuItem icon={FolderPlus} label="文件夹 (Folder)" onClick={() => onAction('new-folder', file)} />
+           <MenuItem icon={FileText} label="文本文档 (.txt)" onClick={() => onAction('new-file-txt', file)} />
+           <MenuItem icon={FileType} label="Word 文档 (.docx)" onClick={() => onAction('new-file-docx', file)} />
+           <MenuItem icon={FileSpreadsheet} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx', file)} />
+           <MenuItem icon={FilePlus} label="PPT 演示文稿 (.pptx)" onClick={() => onAction('new-file-pptx', file)} />
+         </>
+      ) : file ? (
         // File/Folder Context Menu
         <>
           <div className="px-3 py-2 mb-1 text-xs font-bold text-gray-400 dark:text-slate-400 uppercase tracking-wider truncate">
@@ -163,7 +181,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
           <MenuItem icon={Trash2} label={`删除 ${isMulti ? selectedCount + ' 项' : ''} (Delete)`} onClick={() => onAction('delete', file)} danger disabled={file.isVirtual} />
         </>
       ) : (
-        // Empty Space Context Menu
+        // Empty Space Context Menu (Global)
         <>
           <MenuItem icon={Clipboard} label="粘贴 (Paste)" onClick={() => onAction('paste')} disabled={!hasClipboard} />
           <Separator />

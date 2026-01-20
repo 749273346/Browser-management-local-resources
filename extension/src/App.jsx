@@ -607,7 +607,7 @@ function App() {
   };
   
   // Context Menu State
-  const [contextMenu, setContextMenu] = useState({ x: null, y: null, file: null });
+  const [contextMenu, setContextMenu] = useState({ x: null, y: null, file: null, sourceType: null });
   const [renamingName, setRenamingName] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ 
     isOpen: false, 
@@ -776,10 +776,10 @@ function App() {
   };
 
   // Helper to generate unique name
-  const getUniqueName = (baseName, ext = '') => {
+  const getUniqueName = (baseName, ext = '', checkFiles = files) => {
       let name = `${baseName}${ext}`;
       let counter = 2;
-      const exists = (n) => files.some(f => f.name === n);
+      const exists = (n) => checkFiles.some(f => f.name === n);
       while (exists(name)) {
           name = `${baseName} (${counter})${ext}`;
           counter++;
@@ -848,22 +848,36 @@ function App() {
       setContextMenu({ x: null, y: null, file: null });
   };
 
-  const handleContextMenu = (e, file = null) => {
+  const handleContextMenu = (e, file = null, sourceType = null) => {
       e.preventDefault();
+
+      let targetFile = file;
+      let isVirtualTarget = false;
+
+      // Handle empty space context menu in dashboard as content menu for current folder
+      if (targetFile === null && sourceType === 'content') {
+          const pathName = path.includes('/') ? path.split('/').pop() : path.split('\\').pop();
+          targetFile = {
+              path: path,
+              name: pathName || 'Root',
+              isDirectory: true
+          };
+          isVirtualTarget = true;
+      }
 
       let nextSelectedPaths = selectedPaths;
 
-      if (file && !selectedPaths.has(file.path)) {
-          nextSelectedPaths = new Set([file.path]);
+      if (targetFile && !isVirtualTarget && !selectedPaths.has(targetFile.path)) {
+          nextSelectedPaths = new Set([targetFile.path]);
           setSelectedPaths(nextSelectedPaths);
-          setLastSelectedPath(file.path);
+          setLastSelectedPath(targetFile.path);
       }
 
-      const selectedCount = file
-        ? (nextSelectedPaths.has(file.path) ? nextSelectedPaths.size : 1)
+      const selectedCount = targetFile && !isVirtualTarget
+        ? (nextSelectedPaths.has(targetFile.path) ? nextSelectedPaths.size : 1)
         : 0;
 
-      setContextMenu({ x: e.clientX, y: e.clientY, file, selectedCount });
+      setContextMenu({ x: e.clientX, y: e.clientY, file: targetFile, selectedCount, sourceType });
   };
 
   const handleMenuAction = async (action, file, extraData) => {
@@ -926,21 +940,46 @@ function App() {
               showToast('已更新显示状态');
           } else if (action === 'new-folder') {
               const baseName = '新建文件夹';
-              const name = getUniqueName(baseName);
               
               let targetPath = path;
+              let targetFiles = files;
+
               if (file) {
                   if (file.isDirectory) {
                       targetPath = file.path;
+                      // Try to find the folder in flatFiles to get its children
+                      const targetFolder = flatFiles.find(f => f.path === file.path);
+                      if (targetFolder && targetFolder.children) {
+                          targetFiles = targetFolder.children;
+                      } else {
+                          // If we can't find children (maybe not loaded), we might default to empty or current files
+                          // But ideally we should use what we have. 
+                          // If it's the current path, files is correct.
+                          if (file.path !== path) targetFiles = []; // Fallback/Risk: might cause collision if children not loaded
+                      }
                   } else {
                       const p = file.path;
                       const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
                       if (idx !== -1) {
                           targetPath = p.substring(0, idx);
+                          // Same logic for parent folder
+                          const parentPath = targetPath;
+                          if (parentPath === path) {
+                              targetFiles = files;
+                          } else {
+                              const parentFolder = flatFiles.find(f => f.path === parentPath);
+                              if (parentFolder && parentFolder.children) {
+                                  targetFiles = parentFolder.children;
+                              } else {
+                                  targetFiles = []; 
+                              }
+                          }
                       }
                   }
               }
 
+              const name = getUniqueName(baseName, '', targetFiles);
+              
               const separator = targetPath.includes('/') ? '/' : '\\';
               const newPath = `${targetPath}${separator}${name}`;
               
@@ -967,21 +1006,40 @@ function App() {
               const ext = extMap[type] || '';
               const baseName = `新建${typeNameMap[type] || '文件'}`;
               
-              const name = getUniqueName(baseName, ext);
-              
               let targetPath = path;
+              let targetFiles = files;
+
               if (file) {
                   if (file.isDirectory) {
                       targetPath = file.path;
+                      const targetFolder = flatFiles.find(f => f.path === file.path);
+                      if (targetFolder && targetFolder.children) {
+                          targetFiles = targetFolder.children;
+                      } else if (file.path !== path) {
+                          targetFiles = [];
+                      }
                   } else {
                       const p = file.path;
                       const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
                       if (idx !== -1) {
                           targetPath = p.substring(0, idx);
+                          const parentPath = targetPath;
+                          if (parentPath === path) {
+                              targetFiles = files;
+                          } else {
+                              const parentFolder = flatFiles.find(f => f.path === parentPath);
+                              if (parentFolder && parentFolder.children) {
+                                  targetFiles = parentFolder.children;
+                              } else {
+                                  targetFiles = [];
+                              }
+                          }
                       }
                   }
               }
 
+              const name = getUniqueName(baseName, ext, targetFiles);
+              
               const separator = targetPath.includes('/') ? '/' : '\\';
               const newPath = `${targetPath}${separator}${name}`;
               
@@ -1198,10 +1256,11 @@ function App() {
         file={contextMenu.file} 
         fileHidden={contextMenu.file ? isHidden(contextMenu.file.path) : false}
         onAction={handleMenuAction}
-        onClose={() => setContextMenu({ x: null, y: null, file: null, selectedCount: 0 })}
+        onClose={() => setContextMenu({ x: null, y: null, file: null, selectedCount: 0, sourceType: null })}
         isLevel1={(!!contextMenu.file && ((isRoot && isTopLevelFolderPath(contextMenu.file.path)) || currentViewMode === 'dashboard'))}
         hasClipboard={clipboard.length > 0}
         selectedCount={contextMenu.selectedCount || 0}
+        sourceType={contextMenu.sourceType}
       />
 
       <ConfirmDialog
