@@ -87,12 +87,12 @@ export default function FileList({ files, onContextMenu, depth, isHidden, renami
                   e.stopPropagation();
                   if (onContextMenu) onContextMenu(e, file);
               }}
-              className={`group flex items-center p-3 cursor-pointer transition-colors border hover:border-white/40 dark:hover:border-white/10
+              className={`group flex items-center p-3 cursor-pointer transition-colors border
                 ${hidden ? 'opacity-40 grayscale border-dashed border-gray-300 dark:border-slate-700 hover:bg-white/30 dark:hover:bg-slate-800/40' : ''}
-                ${!isSelected && !hidden ? 'border-transparent hover:bg-white/60 dark:hover:bg-slate-800/60' : ''}
+                ${!isSelected && !hidden && !colorScheme ? 'border-transparent hover:border-white/40 dark:hover:border-white/10 hover:bg-white/60 dark:hover:bg-slate-800/60' : ''}
                 ${isSelected ? 'bg-primary-100/80 dark:bg-primary-900/40 border-primary-300 dark:border-primary-700' : ''}
                 ${isRenaming ? 'ring-1 ring-primary-500 bg-white dark:bg-slate-800' : ''}
-                ${colorScheme ? `${colorScheme.bg} ${colorScheme.border}` : ''}
+                ${colorScheme ? `${colorScheme.bg} ${colorScheme.border} hover:brightness-95 dark:hover:brightness-110` : ''}
               `}
               style={{
                 borderRadius: 'var(--radius-input)',
