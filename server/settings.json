@@ -26,7 +26,7 @@
   },
   "appTheme": "glass-morphism",
   "colorMode": "day",
-  "bgImage": "",
+  "bgImage": "/wallpapers/gz_hsr_fuxing.jpg?v=2",
   "glassOpacity": "0.5",
   "glassBlur": "10",
   "dashboardColumnCounts": {
@@ -34,12 +34,13 @@
     "d:": 4
   },
   "dashboardTitle": "汕头电力二工区台账管理目录",
-  "dashboardTitleStyle": "minimal",
+  "dashboardTitleStyle": "classic",
   "dashboardTitleColor": "gray",
   "dashboardTitleSize": "text-4xl",
   "dashboardTitleHidden": "false",
   "dashboardTitleHiddenBySource": {
     "main": false,
     "usb": true
-  }
+  },
+  "customWallpapers": []
 }
