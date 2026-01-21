@@ -203,9 +203,6 @@ const DashboardTitle = ({
                         min-w-[500px] relative overflow-hidden
                     `}>
                         <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-                        <div className="w-10 h-10 mr-4 relative z-10 flex items-center justify-center bg-white/10 rounded-full p-1 shadow-inner">
-                            <img src="/icon.svg" alt="" className="w-full h-full object-contain drop-shadow-md" />
-                        </div>
                         <div className="relative z-10">{renderContent()}</div>
                     </div>
                 )}
@@ -219,9 +216,6 @@ const DashboardTitle = ({
                         min-w-[400px] relative overflow-hidden
                     `}>
                         <div className={`absolute inset-0 opacity-10 bg-gradient-to-r ${colorConfig.from} ${colorConfig.via} ${colorConfig.to}`}></div>
-                        <div className="w-10 h-10 mr-4 relative z-10 flex items-center justify-center bg-white/20 rounded-xl p-1 shadow-sm backdrop-blur-md">
-                            <img src="/icon.svg" alt="" className="w-full h-full object-contain drop-shadow-sm" />
-                        </div>
                         <div className="relative z-10">{renderContent()}</div>
                     </div>
                 )}
@@ -229,9 +223,6 @@ const DashboardTitle = ({
                 {/* Minimal Style */}
                 {isMinimal && (
                     <div className="flex items-center justify-center px-8 py-2 min-w-[300px]">
-                        <div className="mr-3 opacity-80">
-                            <img src="/icon.svg" alt="" className="w-8 h-8 object-contain" />
-                        </div>
                         {renderContent()}
                     </div>
                 )}
@@ -245,9 +236,6 @@ const DashboardTitle = ({
                         min-w-[380px] hover:shadow-lg transition-shadow
                         ${colorConfig.ring} ring-1 ring-opacity-20
                     `}>
-                        <div className="w-8 h-8 mr-3 relative z-10">
-                            <img src="/icon.svg" alt="" className="w-full h-full object-contain" />
-                        </div>
                         <div className="relative z-10">{renderContent()}</div>
                     </div>
                 )}
