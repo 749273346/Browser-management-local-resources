@@ -84,11 +84,21 @@ export function useFileSystem() {
   }, []);
 
   const deleteItem = useCallback(async (path, permanent = false) => {
-      await fetch(`${API_BASE}/delete`, {
+      const res = await fetch(`${API_BASE}/delete`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ path, permanent })
       });
+      if (!res.ok) {
+          let message = `删除失败 (${res.status})`;
+          try {
+              const data = await res.json();
+              if (data && data.error) message = data.error;
+          } catch (e) {
+              void e;
+          }
+          throw new Error(message);
+      }
   }, []);
 
   const copyItem = useCallback(async (source, destination) => {

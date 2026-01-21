@@ -660,7 +660,8 @@ function App() {
     isOpen: false, 
     title: '', 
     message: '', 
-    onConfirm: null 
+    onConfirm: null,
+    showPermanentOption: false
   });
   
   // Initialize Theme and Background
@@ -989,7 +990,7 @@ function App() {
                               await deleteItem(target.path, isPermanent);
                           }
                           fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
-                          showToast('删除成功');
+                          showToast(isPermanent ? '已永久删除' : '已移入回收站');
                           setSelectedPaths(new Set());
                       } catch (err) {
                           showToast('删除失败: ' + err.message, 'error');
@@ -1335,6 +1336,7 @@ function App() {
         title={confirmDialog.title}
         message={confirmDialog.message}
         onConfirm={confirmDialog.onConfirm}
+        showPermanentOption={!!confirmDialog.showPermanentOption}
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
       />
 

@@ -580,10 +580,11 @@ app.post('/api/delete', async (req, res) => {
     if (!targetPath) return res.status(400).json({ error: 'Path is required' });
 
     try {
+        const isPermanent = permanent === true || permanent === 'true' || permanent === 1 || permanent === '1';
         const stats = await fs.stat(targetPath);
         const isDirectory = stats.isDirectory();
 
-        if (permanent) {
+        if (isPermanent) {
             if (isDirectory) {
                 await fs.rm(targetPath, { recursive: true, force: true });
             } else {
@@ -592,9 +593,14 @@ app.post('/api/delete', async (req, res) => {
         } else {
             await moveToRecycleBin(targetPath, isDirectory);
         }
-        res.json({ success: true });
+        res.json({ success: true, mode: isPermanent ? 'permanent' : 'recycle' });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        const message = error && error.code === 'ENOENT'
+            ? 'File does not exist'
+            : error && error.message
+                ? error.message
+                : 'Delete failed';
+        res.status(500).json({ error: message });
     }
 });
 
