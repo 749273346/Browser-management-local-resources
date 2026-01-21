@@ -98,3 +98,6 @@ Thumbs.db
 
 # Trae
 .trae/
+
+# Build Output
+dist/
