@@ -655,7 +655,7 @@ function App() {
   
   // Context Menu State
   const [contextMenu, setContextMenu] = useState({ x: null, y: null, file: null, sourceType: null });
-  const [renamingName, setRenamingName] = useState(null);
+  const [renamingPath, setRenamingPath] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ 
     isOpen: false, 
     title: '', 
@@ -836,16 +836,24 @@ function App() {
   };
 
   const handleRenameSubmit = async (file, newName) => {
-      setRenamingName(null);
-      if (!newName || newName === file.name) return;
+      setRenamingPath(null);
+      const nextName = String(newName || '').trim();
+      if (!nextName || nextName === file.name) return;
       
       try {
-          // Construct new path
-          // Handle path separators carefully
-          const parentPath = file.path.substring(0, file.path.lastIndexOf(file.name));
-          const newPath = parentPath + newName;
+          const sepIdx = Math.max(file.path.lastIndexOf('/'), file.path.lastIndexOf('\\'));
+          const parentPath = sepIdx === -1 ? '' : file.path.slice(0, sepIdx + 1);
+          const newPath = parentPath + nextName;
           
           await renameItem(file.path, newPath);
+          setSelectedPaths(prev => {
+              if (!prev || !prev.has(file.path)) return prev;
+              const next = new Set(prev);
+              next.delete(file.path);
+              next.add(newPath);
+              return next;
+          });
+          setLastSelectedPath(prev => (prev === file.path ? newPath : prev));
           fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
           showToast('重命名成功');
       } catch (err) {
@@ -962,7 +970,7 @@ function App() {
           } else if (action === 'rename') {
               if (targets.length === 1) {
                   if (targets[0].isVirtual) return;
-                  setRenamingName(targets[0].name);
+                  setRenamingPath(targets[0].path);
               } else {
                   showToast('不能同时重命名多个文件', 'error');
               }
@@ -1038,7 +1046,7 @@ function App() {
               
               await createFolder(newPath);
               await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
-              setRenamingName(name);
+              setRenamingPath(newPath);
           } else if (action.startsWith('new-file-')) {
               const type = action.replace('new-file-', '');
               const extMap = {
@@ -1098,7 +1106,7 @@ function App() {
               
               await createFile(newPath);
               await fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
-              setRenamingName(name);
+              setRenamingPath(newPath);
           } else if (action === 'properties') {
               if (targets.length === 1) {
                   alert(`名称: ${targets[0].name}\n路径: ${targets[0].path}\n类型: ${targets[0].isDirectory ? '文件夹' : '文件'}`);
@@ -1185,7 +1193,7 @@ function App() {
           }
       } catch (err) {
           showToast('操作失败: ' + err.message, 'error');
-          setRenamingName(null);
+          setRenamingPath(null);
       }
   };
 
@@ -1242,7 +1250,7 @@ function App() {
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
                     folderColors={folderColors}
-                    renamingName={renamingName}
+                    renamingPath={renamingPath}
                     onRenameSubmit={handleRenameSubmit}
                     selectedPaths={selectedPaths}
                     onFileClick={handleFileClick}
@@ -1266,7 +1274,7 @@ function App() {
                     files={sortedFiles} 
                     onContextMenu={handleContextMenu}
                     isHidden={isHidden}
-                    renamingName={renamingName}
+                    renamingPath={renamingPath}
                     onRenameSubmit={handleRenameSubmit}
                     folderColors={folderColors}
                     selectedPaths={selectedPaths}
@@ -1279,7 +1287,7 @@ function App() {
                     onContextMenu={handleContextMenu}
                     depth={depth}
                     isHidden={isHidden}
-                    renamingName={renamingName}
+                    renamingPath={renamingPath}
                     onRenameSubmit={handleRenameSubmit}
                     folderColors={folderColors}
                     selectedPaths={selectedPaths}

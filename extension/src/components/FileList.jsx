@@ -58,7 +58,7 @@ const getFileIcon = (name, isDirectory, color = null) => {
     return <File className="text-gray-400 dark:text-slate-400" size={24} strokeWidth={1} />;
 };
 
-export default function FileList({ files, onContextMenu, depth, isHidden, renamingName, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {
+export default function FileList({ files, onContextMenu, depth, isHidden, renamingPath, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {
   return (
     <div className="flex flex-col pb-2">
       <div className="px-4 py-2 text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider glass-effect sticky top-0 z-10">
@@ -68,13 +68,13 @@ export default function FileList({ files, onContextMenu, depth, isHidden, renami
       <div className="p-2 space-y-1">
         {files.map((file, i) => {
           const hidden = isHidden ? isHidden(file.path) : false;
-          const isRenaming = renamingName === file.name;
+          const isRenaming = renamingPath === file.path;
           const colorScheme = file.isDirectory ? getEffectiveColorScheme(file.path, folderColors) : null;
           const isSelected = selectedPaths && selectedPaths.has(file.path);
 
           return (
               <div 
-              key={i}
+              key={file.path || i}
               onClick={(e) => !isRenaming && onFileClick && onFileClick(e, file)}
               onDoubleClick={(e) => !isRenaming && onFileDoubleClick && onFileDoubleClick(e, file)}
               onContextMenu={(e) => {
@@ -116,7 +116,8 @@ export default function FileList({ files, onContextMenu, depth, isHidden, renami
                               e.target.blur();
                           } else if (e.key === 'Escape') {
                               e.preventDefault();
-                              onRenameSubmit(file, file.name);
+                              e.target.value = file.name;
+                              e.target.blur();
                           }
                       }}
                       onBlur={(e) => onRenameSubmit(file, e.target.value)}

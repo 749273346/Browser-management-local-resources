@@ -308,7 +308,7 @@ const DashboardTitle = ({
     );
 };
 
-export default function DashboardView({ files, currentPath, onContextMenu, isHidden, folderColors = {}, renamingName, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick, columnCount = 4, dashboardTitle, onDashboardTitleChange, isRoot, dashboardTitleStyle, dashboardTitleColor, dashboardTitleSize, onDashboardTitleStyleChange, onDashboardTitleColorChange, onDashboardTitleSizeChange, dashboardTitleHidden, onDashboardTitleHiddenChange, showHidden }) {
+export default function DashboardView({ files, currentPath, onContextMenu, isHidden, folderColors = {}, renamingPath, onRenameSubmit, selectedPaths, onFileClick, onFileDoubleClick, columnCount = 4, dashboardTitle, onDashboardTitleChange, isRoot, dashboardTitleStyle, dashboardTitleColor, dashboardTitleSize, onDashboardTitleStyleChange, onDashboardTitleColorChange, onDashboardTitleSizeChange, dashboardTitleHidden, onDashboardTitleHiddenChange, showHidden }) {
     const folders = files.filter(f => f.isDirectory);
     const looseFiles = files.filter(f => !f.isDirectory);
 
@@ -335,9 +335,12 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
                 if (e.key === 'Enter') {
-                    onRenameSubmit(file, e.target.value);
+                    e.preventDefault();
+                    e.target.blur();
                 } else if (e.key === 'Escape') {
-                    onRenameSubmit(file, file.name); // Cancel
+                    e.preventDefault();
+                    e.target.value = file.name;
+                    e.target.blur();
                 }
             }}
             onBlur={(e) => onRenameSubmit(file, e.target.value)}
@@ -399,7 +402,7 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                             const hidden = isHidden ? isHidden(folder.path) : false;
                             
                             const children = folder.children || [];
-                            const isFolderRenaming = renamingName === folder.name;
+                            const isFolderRenaming = renamingPath === folder.path;
                             const isFolderSelected = selectedPaths && selectedPaths.has(folder.path);
 
                             return (
@@ -459,12 +462,12 @@ export default function DashboardView({ files, currentPath, onContextMenu, isHid
                                         {children.length > 0 ? (
                                             children.map((child, childIndex) => {
                                                 const childHidden = isHidden ? isHidden(child.path) : false;
-                                                const isChildRenaming = renamingName === child.name;
+                                                const isChildRenaming = renamingPath === child.path;
                                                 const isSelected = selectedPaths && selectedPaths.has(child.path);
 
                                                 return (
                                                     <div
-                                                        key={childIndex}
+                                                        key={child.path || childIndex}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             if (!isChildRenaming && onFileClick) onFileClick(e, child);

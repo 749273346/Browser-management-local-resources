@@ -63,19 +63,19 @@ const getFileIcon = (name, isDirectory, color = null) => {
     return <File className="text-gray-400 dark:text-slate-400" size={48} strokeWidth={1} />;
 };
 
-export default function FileGrid({ files, onContextMenu, isHidden, renamingName, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {
+export default function FileGrid({ files, onContextMenu, isHidden, renamingPath, onRenameSubmit, folderColors, selectedPaths, onFileClick, onFileDoubleClick }) {
   return (
     <div className="flex flex-col h-full">
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-4 p-6">
         {files.map((file, i) => {
             const hidden = isHidden ? isHidden(file.path) : false;
-            const isRenaming = renamingName === file.name;
+            const isRenaming = renamingPath === file.path;
             const colorScheme = file.isDirectory ? getEffectiveColorScheme(file.path, folderColors) : null;
             const isSelected = selectedPaths && selectedPaths.has(file.path);
             
             return (
                 <div 
-                key={i}
+                key={file.path || i}
                 onClick={(e) => !isRenaming && onFileClick && onFileClick(e, file)}
                 onDoubleClick={(e) => !isRenaming && onFileDoubleClick && onFileDoubleClick(e, file)}
                 onContextMenu={(e) => {
@@ -122,7 +122,8 @@ export default function FileGrid({ files, onContextMenu, isHidden, renamingName,
                                 e.target.blur();
                             } else if (e.key === 'Escape') {
                                 e.preventDefault();
-                                onRenameSubmit(file, file.name); // Cancel
+                                e.target.value = file.name;
+                                e.target.blur();
                             }
                         }}
                         onBlur={(e) => onRenameSubmit(file, e.target.value)}
