@@ -22,6 +22,23 @@ export function useHiddenFiles() {
   const [showHidden, setShowHidden] = useState(false);
 
   useEffect(() => {
+    const migrationKey = 'lrm_hidden_files_default_visible_migrated_v1';
+    if (localStorage.getItem(migrationKey) === 'true') return;
+
+    const hadLegacyShownFiles = localStorage.getItem('shownFiles') !== null;
+    const hadLegacyHiddenFiles = localStorage.getItem('hiddenFiles') !== null;
+
+    if (hadLegacyShownFiles && hadLegacyHiddenFiles) {
+      localStorage.removeItem('hiddenFiles');
+      localStorage.removeItem('shownFiles');
+      setHiddenFiles([]);
+      setShownFiles([]);
+    }
+
+    localStorage.setItem(migrationKey, 'true');
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem('hiddenFiles', JSON.stringify(hiddenFiles));
   }, [hiddenFiles]);
 

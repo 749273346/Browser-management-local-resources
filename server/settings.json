@@ -14,10 +14,11 @@
   },
   "folderViewModes": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理": "dashboard",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": "grid",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": "dashboard",
     "d:": "dashboard",
     "d:/工时统计": "dashboard",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库/2023年归档/新建文件夹": "dashboard"
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库/2023年归档/新建文件夹": "dashboard",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "dashboard"
   },
   "appTheme": "glass-morphism",
   "colorMode": "day",

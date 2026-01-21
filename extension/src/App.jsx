@@ -357,7 +357,7 @@ function App() {
   const [selectedPaths, setSelectedPaths] = useState(new Set());
   const [lastSelectedPath, setLastSelectedPath] = useState(null);
 
-  const { toggleHidden, isHidden, showHidden, toggleShowHidden, addHiddenFiles, setShowHiddenState } = useHiddenFiles();
+  const { toggleHidden, isHidden, showHidden, toggleShowHidden, setShowHiddenState } = useHiddenFiles();
 
   useEffect(() => {
     const onStorage = (e) => {
@@ -485,27 +485,6 @@ function App() {
     if (!path) return;
     setShowHiddenState(false);
   }, [path, setShowHiddenState]);
-
-  useEffect(() => {
-    if (!path) return;
-    if (normalizePathKey(currentPath) !== normalizePathKey(path)) return;
-    if (!Array.isArray(files) || files.length === 0) return;
-
-    const collectFilePaths = (list) => {
-      const res = [];
-      list.forEach(item => {
-        if (!item) return;
-        if (!item.isDirectory && item.path) res.push(item.path);
-        if (Array.isArray(item.children) && item.children.length > 0) {
-          res.push(...collectFilePaths(item.children));
-        }
-      });
-      return res;
-    };
-
-    const filePathsToHide = collectFilePaths(files);
-    addHiddenFiles(filePathsToHide);
-  }, [path, currentPath, files, addHiddenFiles]);
 
   // View Mode State (Per folder)
   const [folderViewModes, setFolderViewModes] = useState(() => {
@@ -811,6 +790,7 @@ function App() {
     // }
 
     if (file.isDirectory) {
+      if (file.isVirtual) return;
       // Update URL for persistence (supports refresh)
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('path', file.path);
@@ -963,6 +943,7 @@ function App() {
                   const next = { ...prev };
                   
                   targets.forEach(target => {
+                      if (target.isVirtual) return;
                       const folderKey = getTopLevelFolderKey(target.path, rootKey);
                       if (!folderKey) return;
                       if (!extraData) {
@@ -980,18 +961,22 @@ function App() {
               if (targets.length === 1) handleNavigate(targets[0]);
           } else if (action === 'rename') {
               if (targets.length === 1) {
+                  if (targets[0].isVirtual) return;
                   setRenamingName(targets[0].name);
               } else {
                   showToast('不能同时重命名多个文件', 'error');
               }
           } else if (action === 'delete') {
+              const validTargets = targets.filter(t => !t.isVirtual);
+              if (validTargets.length === 0) return;
+
               setConfirmDialog({
                   isOpen: true,
                   title: '删除文件',
-                  message: `确定要删除 ${targets.length} 个项目吗? 此操作无法撤销。`,
+                  message: `确定要删除 ${validTargets.length} 个项目吗? 此操作无法撤销。`,
                   onConfirm: async () => {
                       try {
-                          for (const target of targets) {
+                          for (const target of validTargets) {
                               await deleteItem(target.path);
                           }
                           fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
@@ -1013,7 +998,7 @@ function App() {
               let targetFiles = files;
 
               if (file) {
-                  if (file.isDirectory) {
+                  if (file.isDirectory && !file.isVirtual) {
                       targetPath = file.path;
                       // Try to find the folder in flatFiles to get its children
                       const targetFolder = flatFiles.find(f => f.path === file.path);
@@ -1078,7 +1063,7 @@ function App() {
               let targetFiles = files;
 
               if (file) {
-                  if (file.isDirectory) {
+                  if (file.isDirectory && !file.isVirtual) {
                       targetPath = file.path;
                       const targetFolder = flatFiles.find(f => f.path === file.path);
                       if (targetFolder && targetFolder.children) {
@@ -1086,7 +1071,7 @@ function App() {
                       } else if (file.path !== path) {
                           targetFiles = [];
                       }
-                  } else {
+                  } else if (!file.isDirectory) {
                       const p = file.path;
                       const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'));
                       if (idx !== -1) {
@@ -1121,7 +1106,10 @@ function App() {
                    alert(`已选择 ${targets.length} 个项目`);
               }
           } else if (action === 'copy') {
-              const itemsToCopy = targets.map(t => ({ path: t.path, name: t.name, isDirectory: t.isDirectory }));
+              const validTargets = targets.filter(t => !t.isVirtual);
+              if (validTargets.length === 0) return;
+              
+              const itemsToCopy = validTargets.map(t => ({ path: t.path, name: t.name, isDirectory: t.isDirectory }));
               setClipboard(itemsToCopy);
               localStorage.setItem(CLIPBOARD_STORAGE_KEY, JSON.stringify(itemsToCopy));
               
