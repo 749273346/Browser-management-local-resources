@@ -1,4 +1,5 @@
-import { Folder, File, FileImage, FileText, FileCode, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, EyeOff, Presentation, Sheet } from 'lucide-react';
+import { Folder, File, FileImage, FileText, FileCode, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, EyeOff, Sheet } from 'lucide-react';
+import PptIcon from './PptIcon';
 import { getEffectiveColorScheme } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory, color = null) => {
@@ -25,7 +26,7 @@ const getFileIcon = (name, isDirectory, color = null) => {
     }
 
     if (['ppt', 'pptx', 'key', 'dps', 'odp'].includes(ext)) {
-        return <Presentation className="text-red-500" size={48} strokeWidth={1} />;
+        return <PptIcon className="text-red-500" size={48} strokeWidth={1} />;
     }
 
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'heic', 'heif', 'avif'].includes(ext)) {

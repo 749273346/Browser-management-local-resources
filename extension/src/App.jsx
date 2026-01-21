@@ -1197,6 +1197,8 @@ function App() {
       }
   };
 
+
+
   if (!localStorage.getItem('rootPath') && !path) {
     return <WelcomeScreen onComplete={handleSetRoot} />;
   }

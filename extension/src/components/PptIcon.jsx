@@ -1,0 +1,23 @@
+import React from 'react';
+
+export default function PptIcon({ size = 24, className = "", strokeWidth = 2 }) {
+  return (
+    <svg 
+      width={size} 
+      height={size} 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth={strokeWidth} 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+      <line x1="8" y1="21" x2="16" y2="21" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+      <path d="M7 8h10" />
+      <path d="M7 12h6" />
+    </svg>
+  );
+}
