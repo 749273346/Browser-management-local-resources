@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Folder, File, FileImage, FileText, FileCode, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, ChevronRight, EyeOff, Eye, Presentation, FileBarChart } from 'lucide-react';
+import { Folder, File, FileImage, FileText, FileCode, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, ChevronRight, EyeOff, Eye, Presentation, Sheet } from 'lucide-react';
 import { COLUMN_COLORS, getEffectiveColorScheme } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory) => {
@@ -8,7 +8,7 @@ const getFileIcon = (name, isDirectory) => {
     const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
 
     if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) {
-        return <FileBarChart className="text-green-600" size={20} />;
+        return <Sheet className="text-green-600" size={20} />;
     }
 
     if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'pages', 'wps'].includes(ext)) {

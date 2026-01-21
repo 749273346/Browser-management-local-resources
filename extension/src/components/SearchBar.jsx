@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react'
 import { 
     Search, X, Folder, File, FileText, FileCode,
     FileImage, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2,
-    Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown, Presentation, FileBarChart
+    Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown, Presentation, Sheet
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -28,7 +28,7 @@ const getFileIcon = (name, isDirectory) => {
     const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
 
     if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) {
-        return <FileBarChart className="text-green-600" size={18} />;
+        return <Sheet className="text-green-600" size={18} />;
     }
 
     if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'pages', 'wps'].includes(ext)) {
