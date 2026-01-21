@@ -1,6 +1,9 @@
 import { AlertTriangle } from 'lucide-react';
+import { useState } from 'react';
 
-export default function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel, confirmText = '确定', cancelText = '取消', type = 'danger' }) {
+export default function ConfirmDialog({ isOpen, title, message, onConfirm, onCancel, confirmText = '确定', cancelText = '取消', type = 'danger', showPermanentOption = false }) {
+  const [isPermanent, setIsPermanent] = useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -16,6 +19,21 @@ export default function ConfirmDialog({ isOpen, title, message, onConfirm, onCan
             <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-slate-100 mb-1">{title}</h3>
                 <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed break-words">{message}</p>
+                
+                {showPermanentOption && (
+                    <div className="mt-4 flex items-center">
+                        <input
+                            type="checkbox"
+                            id="permanent-delete"
+                            checked={isPermanent}
+                            onChange={(e) => setIsPermanent(e.target.checked)}
+                            className="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <label htmlFor="permanent-delete" className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300 select-none cursor-pointer">
+                            永久删除 (不放入回收站)
+                        </label>
+                    </div>
+                )}
             </div>
         </div>
         
@@ -27,7 +45,7 @@ export default function ConfirmDialog({ isOpen, title, message, onConfirm, onCan
                 {cancelText}
             </button>
             <button
-                onClick={onConfirm}
+                onClick={() => onConfirm(isPermanent)}
                 className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors shadow-sm
                     ${type === 'danger' 
                         ? 'bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500' 

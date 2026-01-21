@@ -981,11 +981,12 @@ function App() {
               setConfirmDialog({
                   isOpen: true,
                   title: '删除文件',
-                  message: `确定要删除 ${validTargets.length} 个项目吗? 此操作无法撤销。`,
-                  onConfirm: async () => {
+                  message: `确定要删除 ${validTargets.length} 个项目吗?`,
+                  showPermanentOption: true,
+                  onConfirm: async (isPermanent) => {
                       try {
                           for (const target of validTargets) {
-                              await deleteItem(target.path);
+                              await deleteItem(target.path, isPermanent);
                           }
                           fetchFiles(path, currentViewMode === 'dashboard' ? 2 : 1);
                           showToast('删除成功');

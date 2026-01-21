@@ -543,17 +543,54 @@ app.post('/api/rename', async (req, res) => {
     }
 });
 
+const moveToRecycleBin = async (targetPath, isDirectory) => {
+    if (process.platform !== 'win32') {
+        throw new Error('Recycle bin is only supported on Windows');
+    }
+
+    const escapedPath = escapePowerShellSingleQuotedString(targetPath);
+    const deleteMethod = isDirectory ? 'DeleteDirectory' : 'DeleteFile';
+    
+    const psScript = `
+Add-Type -AssemblyName Microsoft.VisualBasic
+[Microsoft.VisualBasic.FileIO.FileSystem]::${deleteMethod}('${escapedPath}', 'OnlyErrorDialogs', 'SendToRecycleBin')
+    `.trim();
+
+    const command = toPowerShellEncodedCommand(psScript);
+
+    return new Promise((resolve, reject) => {
+        exec(command, { windowsHide: true }, (error, stdout, stderr) => {
+            if (error) {
+                // Check if it was cancelled by user (if UI was shown) or other errors
+                logger.error('Recycle bin error:', error);
+                // If the user cancelled, it might throw "The operation was canceled by the user"
+                // But with OnlyErrorDialogs, it shouldn't show confirmation.
+                // However, if the file is in use, it might show error.
+                reject(error);
+            } else {
+                resolve();
+            }
+        });
+    });
+};
+
 // Delete
 app.post('/api/delete', async (req, res) => {
-    const { path: targetPath } = req.body;
+    const { path: targetPath, permanent } = req.body;
     if (!targetPath) return res.status(400).json({ error: 'Path is required' });
 
     try {
         const stats = await fs.stat(targetPath);
-        if (stats.isDirectory()) {
-            await fs.rm(targetPath, { recursive: true, force: true });
+        const isDirectory = stats.isDirectory();
+
+        if (permanent) {
+            if (isDirectory) {
+                await fs.rm(targetPath, { recursive: true, force: true });
+            } else {
+                await fs.unlink(targetPath);
+            }
         } else {
-            await fs.unlink(targetPath);
+            await moveToRecycleBin(targetPath, isDirectory);
         }
         res.json({ success: true });
     } catch (error) {

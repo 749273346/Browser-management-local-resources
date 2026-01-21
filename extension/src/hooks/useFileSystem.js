@@ -83,11 +83,11 @@ export function useFileSystem() {
       });
   }, []);
 
-  const deleteItem = useCallback(async (path) => {
+  const deleteItem = useCallback(async (path, permanent = false) => {
       await fetch(`${API_BASE}/delete`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ path })
+          body: JSON.stringify({ path, permanent })
       });
   }, []);
 
