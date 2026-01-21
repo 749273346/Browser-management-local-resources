@@ -1,4 +1,4 @@
-import { Folder, File, FileImage, FileText, FileCode, FileSpreadsheet, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, ChevronRight, ExternalLink, EyeOff } from 'lucide-react';
+import { Folder, File, FileImage, FileText, FileCode, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2, ChevronRight, ExternalLink, EyeOff, Presentation, FileBarChart } from 'lucide-react';
 import { getEffectiveColorScheme } from '../constants/theme';
 
 const getFileIcon = (name, isDirectory, color = null) => {
@@ -12,11 +12,15 @@ const getFileIcon = (name, isDirectory, color = null) => {
     const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
 
     if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) {
-        return <FileSpreadsheet className="text-green-600" size={24} strokeWidth={1} />;
+        return <FileBarChart className="text-green-600" size={24} strokeWidth={1} />;
     }
 
-    if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'ppt', 'pptx', 'key', 'pages', 'wps', 'dps'].includes(ext)) {
+    if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'pages', 'wps'].includes(ext)) {
         return <FileText className="text-blue-500 dark:text-primary-300" size={24} strokeWidth={1} />;
+    }
+
+    if (['ppt', 'pptx', 'key', 'dps', 'odp'].includes(ext)) {
+        return <Presentation className="text-red-500" size={24} strokeWidth={1} />;
     }
 
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'heic', 'heif', 'avif'].includes(ext)) {

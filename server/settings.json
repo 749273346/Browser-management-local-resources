@@ -18,7 +18,10 @@
     "d:": "dashboard",
     "d:/工时统计": "dashboard",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库/2023年归档/新建文件夹": "dashboard",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "grid"
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "grid",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理": "list",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理/3-设备巡视库": "list",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理/1-年度检修计划库": "grid"
   },
   "appTheme": "glass-morphism",
   "colorMode": "day",
@@ -29,7 +32,7 @@
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": 3,
     "d:": 3
   },
-  "dashboardTitle": "惠来电力工区台账管理目录",
+  "dashboardTitle": "汕头电力二工区台账管理目录",
   "dashboardTitleStyle": "minimal",
   "dashboardTitleColor": "gray",
   "dashboardTitleSize": "text-4xl",

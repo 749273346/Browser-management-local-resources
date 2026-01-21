@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { FolderPlus, FilePlus, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileSpreadsheet, FileType, FileText, Copy, Clipboard } from 'lucide-react';
+import { FolderPlus, FilePlus, FolderOpen, Pencil, Trash2, EyeOff, Eye, Info, FileType, FileText, Copy, Clipboard, FileBarChart } from 'lucide-react';
 import { COLUMN_COLORS } from '../constants/theme';
 
 export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden, isLevel1, hasClipboard, selectedCount = 1, sourceType = null }) {
@@ -123,7 +123,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
            <MenuItem icon={FolderPlus} label="文件夹 (Folder)" onClick={() => onAction('new-folder', file)} />
            <MenuItem icon={FileText} label="文本文档 (.txt)" onClick={() => onAction('new-file-txt', file)} />
            <MenuItem icon={FileType} label="Word 文档 (.docx)" onClick={() => onAction('new-file-docx', file)} />
-           <MenuItem icon={FileSpreadsheet} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx', file)} />
+           <MenuItem icon={FileBarChart} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx', file)} />
            <MenuItem icon={FilePlus} label="PPT 演示文稿 (.pptx)" onClick={() => onAction('new-file-pptx', file)} />
          </>
       ) : file ? (
@@ -189,7 +189,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
           <MenuItem icon={FolderPlus} label="文件夹 (Folder)" onClick={() => onAction('new-folder')} />
           <MenuItem icon={FileText} label="文本文档 (.txt)" onClick={() => onAction('new-file-txt')} />
           <MenuItem icon={FileType} label="Word 文档 (.docx)" onClick={() => onAction('new-file-docx')} />
-          <MenuItem icon={FileSpreadsheet} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx')} />
+          <MenuItem icon={FileBarChart} label="Excel 表格 (.xlsx)" onClick={() => onAction('new-file-xlsx')} />
           <MenuItem icon={FilePlus} label="PPT 演示文稿 (.pptx)" onClick={() => onAction('new-file-pptx')} />
         </>
       )}

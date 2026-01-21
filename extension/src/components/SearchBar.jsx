@@ -1,8 +1,8 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { 
-    Search, X, Folder, File, FileText, FileSpreadsheet, FileCode,
+    Search, X, Folder, File, FileText, FileCode,
     FileImage, Film, Music, FileArchive, AppWindow, Link2, Database, FileType2,
-    Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown
+    Clock, Loader2, ExternalLink, ArrowRight, ArrowUp, ArrowDown, Presentation, FileBarChart
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -28,11 +28,15 @@ const getFileIcon = (name, isDirectory) => {
     const ext = name.includes('.') ? name.split('.').pop().toLowerCase() : '';
 
     if (['xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'].includes(ext)) {
-        return <FileSpreadsheet className="text-green-600" size={18} />;
+        return <FileBarChart className="text-green-600" size={18} />;
     }
 
-    if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'ppt', 'pptx', 'key', 'pages', 'wps', 'dps'].includes(ext)) {
+    if (['doc', 'docx', 'pdf', 'txt', 'md', 'rtf', 'odt', 'pages', 'wps'].includes(ext)) {
         return <FileText className="text-blue-500" size={18} />;
+    }
+
+    if (['ppt', 'pptx', 'key', 'dps', 'odp'].includes(ext)) {
+        return <Presentation className="text-red-500" size={18} />;
     }
 
     if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'tif', 'tiff', 'heic', 'heif', 'avif'].includes(ext)) {
