@@ -757,7 +757,7 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
                         <div className="mt-6 p-4 bg-gray-50 dark:bg-slate-800/60 rounded-xl text-left text-sm text-gray-600 dark:text-slate-300 space-y-3">
                             <div>
                                 <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">单位</h4>
-                                <p>惠州电务段汕头水电车间</p>
+                                <p>惠州电务段 汕头水电车间</p>
                             </div>
                             
                             <div>
