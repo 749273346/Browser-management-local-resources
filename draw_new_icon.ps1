@@ -41,8 +41,8 @@ $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
 $g.Clear([System.Drawing.Color]::Transparent)
 
 # Define Color and Pen
-# Using DarkCyan (similar to the screenshot)
-$color = [System.Drawing.Color]::FromArgb(255, 0, 139, 139) 
+# Match tray icon blue
+$color = [System.Drawing.Color]::FromArgb(255, 25, 103, 210)
 # Make the line thick enough to be visible
 $pen = New-Object System.Drawing.Pen($color, 14)
 $pen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round

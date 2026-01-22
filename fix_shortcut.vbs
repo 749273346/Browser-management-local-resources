@@ -12,8 +12,14 @@ oShellLink.TargetPath = "wscript.exe"
 oShellLink.Arguments = "//nologo //b """ & strCurrentDir & "\start-gui.vbs"""
 ' Working Directory: IMPORTANT for relative paths
 oShellLink.WorkingDirectory = strCurrentDir
-' Icon: use the newly converted .ico
-oShellLink.IconLocation = strCurrentDir & "\app.ico"
+' Icon: prefer app_drawn.ico, fallback to app.ico
+iconPath = strCurrentDir & "\app_drawn.ico"
+If Not fso.FileExists(iconPath) Then
+  iconPath = strCurrentDir & "\app.ico"
+End If
+If fso.FileExists(iconPath) Then
+  oShellLink.IconLocation = iconPath
+End If
 ' Description
 oShellLink.Description = "Local Resource Manager Service"
 

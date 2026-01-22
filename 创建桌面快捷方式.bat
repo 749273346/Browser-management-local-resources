@@ -7,16 +7,25 @@ echo ========================================================
 echo.
 
 REM 1. Check and Restore Icon
-if not exist "app.ico" (
+if not exist "app_drawn.ico" (
     echo [Check] Icon missing, regenerating...
-    powershell -ExecutionPolicy Bypass -File convert_icon.ps1
-    if exist "app.ico" (
-        echo [OK] Icon generated.
-    ) else (
-        echo [Error] Icon generation failed. Using default icon.
-    )
-) else (
+    powershell -ExecutionPolicy Bypass -File draw_new_icon.ps1
+)
+
+if exist "app_drawn.ico" (
     echo [Check] Icon found.
+) else (
+    if not exist "app.ico" (
+        echo [Check] Icon missing, regenerating...
+        powershell -ExecutionPolicy Bypass -File convert_icon.ps1
+        if exist "app.ico" (
+            echo [OK] Icon generated.
+        ) else (
+            echo [Error] Icon generation failed. Using default icon.
+        )
+    ) else (
+        echo [Check] Icon found.
+    )
 )
 
 REM 2. Generate Shortcut
