@@ -15,9 +15,21 @@
     "e:/qc-攻关小组/政策性文件": "yellow",
     "e:/qc-攻关小组/组织纲领": "green",
     "e:/qc-攻关小组/trea-sets": "purple",
-    "e:/qc-攻关小组/ui-ux-pro-max-skill": "gray"
+    "e:/qc-攻关小组/ui-ux-pro-max-skill": "gray",
+    "d:/浏览器资源管理": "blue",
+    "d:/智能运维系统前端代码": "red",
+    "d:/智能运维系统设备信息": "orange",
+    "d:/智能运维原始数据": "yellow",
+    "d:/singlefile": "green",
+    "d:/system volume information": "purple"
   },
-  "folderViewModes": {},
+  "folderViewModes": {
+    "e:/qc-攻关小组/正在进行项目/工区管理-ai": "grid",
+    "e:/qc-攻关小组": "list",
+    "e:/qc-攻关小组/正在进行项目": "grid",
+    "e:/qc-攻关小组/正在进行项目/工区管理-ai/智能运维系统/智能运维系统设备信息": "grid",
+    "d:/智能运维系统前端代码": "grid"
+  },
   "appTheme": "glass-morphism",
   "colorMode": "day",
   "bgImage": "",

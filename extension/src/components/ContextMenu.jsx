@@ -31,7 +31,7 @@ export default function ContextMenu({ x, y, file, onAction, onClose, fileHidden,
     if (isCopy) {
       e.preventDefault();
       e.stopPropagation();
-      if (file && !file.isVirtual && sourceType !== 'content') onAction('copy', file);
+      if (file && !file.isVirtual) onAction('copy', file);
       onClose();
       return;
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useFileSystem } from './hooks/useFileSystem'
 import { useHiddenFiles } from './hooks/useHiddenFiles'
 import WelcomeScreen from './components/WelcomeScreen'
@@ -663,6 +663,23 @@ function App() {
     onConfirm: null,
     showPermanentOption: false
   });
+
+  const selectedPathsRef = useRef(selectedPaths);
+  const flatFilesRef = useRef(flatFiles);
+  const contextMenuRef = useRef(contextMenu);
+  const handleMenuActionRef = useRef(null);
+
+  useEffect(() => {
+      selectedPathsRef.current = selectedPaths;
+  }, [selectedPaths]);
+
+  useEffect(() => {
+      flatFilesRef.current = flatFiles;
+  }, [flatFiles]);
+
+  useEffect(() => {
+      contextMenuRef.current = contextMenu;
+  }, [contextMenu]);
   
   // Initialize Theme and Background
   useEffect(() => {
@@ -1199,6 +1216,62 @@ function App() {
       }
   };
 
+  useEffect(() => {
+      handleMenuActionRef.current = handleMenuAction;
+  });
+
+  useEffect(() => {
+      const isEditableTarget = (target) => {
+          if (!target || !(target instanceof Element)) return false;
+          if (target.closest('input, textarea, select, [contenteditable="true"], [contenteditable=""], [contenteditable="plaintext-only"]')) return true;
+          return false;
+      };
+
+      const pickSelectedFile = () => {
+          const sel = selectedPathsRef.current;
+          if (!sel || sel.size === 0) return null;
+          const firstPath = sel.values().next().value;
+          if (!firstPath) return null;
+          const found = (flatFilesRef.current || []).find(f => f && f.path === firstPath);
+          if (found) return found;
+          const name = String(firstPath).split(/[\\/]/).filter(Boolean).pop() || String(firstPath);
+          return { path: firstPath, name, isDirectory: false };
+      };
+
+      const onKeyDownCapture = (e) => {
+          if (!e) return;
+          if (!(e.ctrlKey || e.metaKey)) return;
+          if (e.altKey) return;
+          if (e.isComposing) return;
+          if (isEditableTarget(e.target) || isEditableTarget(document.activeElement)) return;
+
+          const key = String(e.key || '').toLowerCase();
+          const act = handleMenuActionRef.current;
+          if (typeof act !== 'function') return;
+
+          if (key === 'c') {
+              const file = pickSelectedFile();
+              if (!file) return;
+              e.preventDefault();
+              e.stopPropagation();
+              void act('copy', file);
+              return;
+          }
+
+          if (key === 'v') {
+              const cm = contextMenuRef.current;
+              const cmFile = cm && cm.x !== null && cm.y !== null ? cm.file : null;
+              const isDir = !!cmFile?.isDirectory || Array.isArray(cmFile?.children);
+              const target = (cmFile && isDir && !cmFile.isVirtual) ? cmFile : null;
+              e.preventDefault();
+              e.stopPropagation();
+              void act('paste', target);
+          }
+      };
+
+      window.addEventListener('keydown', onKeyDownCapture, true);
+      return () => window.removeEventListener('keydown', onKeyDownCapture, true);
+  }, []);
 
 
   if (!localStorage.getItem('rootPath') && !path) {
