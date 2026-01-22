@@ -50,18 +50,20 @@ $pen.StartCap = [System.Drawing.Drawing2D.LineCap]::Round
 $pen.EndCap = [System.Drawing.Drawing2D.LineCap]::Round
 
 # Define Geometry
-# We want to position it slightly Top-Right to avoid the shortcut arrow (Bottom-Left)
-# Icon Size: ~140x120
-$iconW = 140
-$iconH = 120
+# User requested: Slightly larger and centered
+# Icon Size: Increased from 140x120 to 180x150
+$iconW = 180
+$iconH = 150
 
-# Margins to push it to Top-Right
-$x = [int]86
-$y = [int]40
+# Center on 256x256 canvas
+# X = (256 - 180) / 2 = 38
+# Y = (256 - 150) / 2 = 53
+$x = [int]38
+$y = [int]53
 
-# Folder Tab Dimensions
-$tabH = [int]20
-$tabW = [int]60
+# Folder Tab Dimensions (Scaled up slightly)
+$tabH = [int]25
+$tabW = [int]80
 
 # Calculate Coordinates (Pre-calculate as int to avoid syntax issues)
 $x_tabR = [int]($x + $tabW)
