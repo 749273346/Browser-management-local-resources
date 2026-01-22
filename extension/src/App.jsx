@@ -629,9 +629,14 @@ function App() {
       }
   });
 
-  // Get view mode for current path (default to 'dashboard')
-  // We should use 'path' state which is the source of truth for navigation in App.jsx
-  const currentViewMode = folderViewModes[normalizePathKey(path)] || 'dashboard';
+  const pathKey = normalizePathKey(path)
+  const storedViewMode = folderViewModes[pathKey]
+  const onlyFilesNoFolders =
+      !storedViewMode &&
+      Array.isArray(visibleFiles) &&
+      visibleFiles.length > 0 &&
+      visibleFiles.every(f => f && !f.isDirectory)
+  const currentViewMode = storedViewMode || (onlyFilesNoFolders ? 'grid' : 'dashboard')
 
   const handleToggleView = (newMode) => {
       setFolderViewModes(prev => {
@@ -758,8 +763,6 @@ function App() {
   // Initial Load
   useEffect(() => {
     if (path) {
-      // Determine view mode for the target path to fetch correct depth
-      // We need to look up the mode for 'path', not 'currentPath' (which might be stale)
       const mode = folderViewModes[normalizePathKey(path)] || 'dashboard';
       fetchFiles(path, mode === 'dashboard' ? 2 : 1);
     }

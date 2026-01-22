@@ -21,14 +21,25 @@
     "d:/智能运维系统设备信息": "orange",
     "d:/智能运维原始数据": "yellow",
     "d:/singlefile": "green",
-    "d:/system volume information": "purple"
+    "d:/system volume information": "purple",
+    "d:/浏览器资源管理/browser-management-local-resources/.trae/documents": "blue"
   },
   "folderViewModes": {
     "e:/qc-攻关小组/正在进行项目/工区管理-ai": "grid",
-    "e:/qc-攻关小组": "list",
+    "e:/qc-攻关小组": "dashboard",
     "e:/qc-攻关小组/正在进行项目": "grid",
     "e:/qc-攻关小组/正在进行项目/工区管理-ai/智能运维系统/智能运维系统设备信息": "grid",
-    "d:/智能运维系统前端代码": "grid"
+    "e:/qc-攻关小组/正在进行项目/自动打卡器": "dashboard",
+    "e:/qc-攻关小组/成果安装包/智能排班系统 2.0.0": "grid",
+    "e:/qc-攻关小组/项目实例": "grid",
+    "e:/qc-攻关小组/成果安装包/智能排班系统": "grid",
+    "e:/qc-攻关小组/ui-ux-pro-max-skill": "dashboard",
+    "e:/qc-攻关小组/成果安装包": "dashboard",
+    "e:/qc-攻关小组/解决异常": "grid",
+    "e:/qc-攻关小组/数据库相关资料": "list",
+    "e:/qc-攻关小组/数据库相关资料/安全警示月活动资料": "dashboard",
+    "e:/qc-攻关小组/数据库相关资料/安全警示月活动资料/2-视频": "grid",
+    "e:/qc-攻关小组/组织纲领": "grid"
   },
   "appTheme": "glass-morphism",
   "colorMode": "day",
