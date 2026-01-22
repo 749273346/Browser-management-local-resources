@@ -762,10 +762,10 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
                             
                             <div>
                                 <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">技术指导</h4>
-                                <p>李海东、梁成欧、庄金旺、郭新城、洪映森</p>
+                                <p>梁成欧、李海东、庄金旺<br />郭新城、彭君鹏、洪映森</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-[0.8fr_1.2fr] gap-2">
                                 <div>
                                     <h4 className="font-semibold text-gray-900 dark:text-slate-100 mb-1">作者</h4>
                                     <p>智轨先锋组</p>

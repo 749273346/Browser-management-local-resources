@@ -1,5 +1,5 @@
 {
-  "autoStart": true,
+  "autoStart": false,
   "rootPath": "E:\\QC-攻关小组\\正在进行项目\\浏览器资源管理\\Browser-management-local-resources\\测试资源库",
   "folderColors": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "blue",
