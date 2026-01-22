@@ -19,13 +19,14 @@
     "d:": "dashboard",
     "d:/工时统计": "dashboard",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库/2023年归档/新建文件夹": "dashboard",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "list",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": "dashboard",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理": "list",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理/3-设备巡视库": "list",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/生产管理/1-年度检修计划库": "grid",
     "c:/users/74927/desktop/测试资源库": "dashboard",
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库/2023年归档": "list",
-    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库": "list"
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理/1-材料管理库": "list",
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/综合管理/5-班建工作库": "list"
   },
   "appTheme": "modern-minimal",
   "colorMode": "day",
@@ -34,7 +35,8 @@
   "glassBlur": "10",
   "dashboardColumnCounts": {
     "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库": 3,
-    "d:": 4
+    "d:": 4,
+    "e:/qc-攻关小组/正在进行项目/浏览器资源管理/browser-management-local-resources/测试资源库/安全管理": 4
   },
   "dashboardTitle": "汕头电力二工区台账管理目录",
   "dashboardTitleStyle": "minimal",

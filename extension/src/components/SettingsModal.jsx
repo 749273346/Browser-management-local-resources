@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react';
-import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder, Sun, Moon, LogOut } from 'lucide-react';
+import { X, Image as ImageIcon, Sliders, Info, Upload, Save, Folder, Sun, Moon, LogOut, Copy } from 'lucide-react';
 import { themes, applyTheme, applyColorMode } from '../theme';
 import Button from './Button';
+
+const formatPath = (path) => {
+    if (!path) return '';
+    const parts = path.split(/[/\\]+/).filter(Boolean);
+    if (parts.length < 4) return path;
+    return `${parts[0]}\\...\\${parts[parts.length-2]}\\${parts[parts.length-1]}`;
+};
 
 const normalizeBgValue = (value) => {
   if (!value || value === 'none') return '';
@@ -314,6 +321,12 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
       }
   };
 
+  const handleCopyPath = (path) => {
+      navigator.clipboard.writeText(path).then(() => {
+          if (showToast) showToast('路径已复制到剪贴板');
+      });
+  };
+
   const handleLogout = async () => {
       if (confirm('确定要退出当前资源库并返回初始界面吗？')) {
           localStorage.removeItem('rootPath');
@@ -586,24 +599,42 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
                     <div className="space-y-8">
                         <div>
                             <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">当前根目录</h3>
-                            <div className="bg-gray-50 dark:bg-slate-800/60 p-4 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col space-y-3">
-                                <div className="text-sm font-mono text-gray-600 dark:text-slate-300 break-all bg-white dark:bg-slate-900 p-2 rounded border border-gray-100 dark:border-slate-700">
-                                    {currentRoot || '未设置'}
+                            
+                            <div className="bg-white dark:bg-slate-900/50 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex items-center gap-4 shadow-sm">
+                                <div className="p-3 bg-primary-50 dark:bg-primary-500/10 rounded-xl text-primary-600 dark:text-primary-400 flex-shrink-0">
+                                    <Folder size={28} strokeWidth={1.5} />
                                 </div>
-                                <Button 
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={handleChangeRoot}
-                                    className="self-end"
-                                    icon={Folder}
-                                >
-                                    更改目录
-                                </Button>
+                                <div className="flex-1 min-w-0">
+                                    <div className="text-base font-bold text-gray-900 dark:text-slate-100 truncate" title={currentRoot ? currentRoot.split(/[/\\]+/).pop() : '未设置'}>
+                                        {currentRoot ? currentRoot.split(/[/\\]+/).filter(Boolean).pop() : '未设置'}
+                                    </div>
+                                    <div className="text-xs font-mono text-gray-500 dark:text-slate-400 truncate mt-1" title={currentRoot}>
+                                        {formatPath(currentRoot) || '请选择一个文件夹作为根目录'}
+                                    </div>
+                                </div>
+                                <div className="flex gap-2 flex-shrink-0">
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        onClick={() => handleCopyPath(currentRoot)} 
+                                        title="复制完整路径"
+                                        className="text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"
+                                    >
+                                         <Copy size={18} />
+                                    </Button>
+                                    <Button 
+                                        variant="primary" 
+                                        size="sm"
+                                        onClick={handleChangeRoot}
+                                    >
+                                        更改
+                                    </Button>
+                                </div>
                             </div>
                             
                             <Button 
                                 variant="danger" 
-                                className="w-full justify-center mt-2"
+                                className="w-full justify-center mt-4"
                                 onClick={handleLogout}
                                 icon={LogOut}
                             >
@@ -633,26 +664,42 @@ export default function SettingsModal({ isOpen, onClose, showToast, dashboardCol
                             <h3 className="text-sm font-bold text-gray-900 dark:text-slate-100 uppercase tracking-wider mb-4">最近使用</h3>
                             {history.length > 0 ? (
                                 <div className="space-y-2">
-                                    {history.map((path, idx) => (
+                                    {history.map((path, idx) => {
+                                        const folderName = path.split(/[/\\]+/).filter(Boolean).pop() || path;
+                                        return (
                                         <div key={idx} className="flex items-center justify-between p-3 bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl hover:border-primary-200 dark:hover:border-primary-500/40 transition-colors group">
-                                            <span className="text-xs text-gray-600 dark:text-slate-300 font-mono truncate flex-1 mr-4" title={path}>{path}</span>
+                                            <div className="flex items-center gap-3 flex-1 min-w-0 mr-4">
+                                                <div className="p-2 bg-gray-50 dark:bg-slate-800 rounded-lg text-gray-400 dark:text-slate-500">
+                                                    <Folder size={16} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-medium text-gray-700 dark:text-slate-200 truncate" title={folderName}>
+                                                        {folderName}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 dark:text-slate-500 font-mono truncate" title={path}>
+                                                        {formatPath(path)}
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             {path !== currentRoot && (
                                                 <Button 
                                                     variant="active"
                                                     size="sm"
                                                     onClick={() => handleHistoryClick(path)}
-                                                    className="opacity-0 group-hover:opacity-100"
+                                                    className="opacity-0 group-hover:opacity-100 flex-shrink-0"
                                                 >
                                                     切换
                                                 </Button>
                                             )}
                                             {path === currentRoot && (
-                                                <span className="px-2 py-1 text-xs font-medium text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-950/40 rounded-md">
+                                                <span className="px-2 py-1 text-xs font-medium text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-950/40 rounded-md flex-shrink-0">
                                                     当前
                                                 </span>
                                             )}
                                         </div>
-                                    ))}
+                                    );
+                                    })}
                                 </div>
                             ) : (
                                 <div className="text-center py-8 text-gray-400 dark:text-slate-400 text-sm">暂无历史记录</div>
