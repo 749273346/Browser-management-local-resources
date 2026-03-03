@@ -8,14 +8,12 @@ import PptIcon from './PptIcon';
 
 const CATEGORIES = [
     { id: 'all', label: '全部' },
-    { id: 'sheet', label: '表格' },
     { id: 'doc', label: '文档' },
+    { id: 'sheet', label: '表格' },
     { id: 'image', label: '图片' },
     { id: 'video', label: '视频' },
     { id: 'audio', label: '音频' },
     { id: 'archive', label: '压缩包' },
-    { id: 'app', label: '程序' },
-    { id: 'code', label: '代码' },
 ];
 
 const MAX_HISTORY = 5;
